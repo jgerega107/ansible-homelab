@@ -1,0 +1,5 @@
+- name: Set up storage sharing
+  hosts: storage
+  become: true
+  roles:
+    - samba

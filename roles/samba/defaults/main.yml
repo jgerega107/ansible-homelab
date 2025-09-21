@@ -1,0 +1,11 @@
+# Subnets allowed to access ZFS pool over SMB
+#
+# Example
+#
+# samba_shares:
+#   - name: "share"
+#     allowed_subnets:
+#       - "192.168.1."
+#     mount_point: "/mnt/share"
+
+samba_shares: []

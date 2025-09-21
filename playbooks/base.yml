@@ -1,0 +1,6 @@
+- name: Bootstrap hosts with base config/packages
+  hosts: all
+  become: true
+  roles:
+    - user
+    - base

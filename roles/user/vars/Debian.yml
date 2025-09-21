@@ -1,0 +1,4 @@
+---
+# User to configure
+user_groups:
+  - sudo

@@ -1,0 +1,2 @@
+---
+__nvidia_arch: "{{ ansible_architecture }}"

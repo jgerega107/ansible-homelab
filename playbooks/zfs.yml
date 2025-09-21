@@ -1,0 +1,6 @@
+- name: Install ZFS drivers
+  hosts:
+    - zfs
+  become: true
+  roles:
+    - zfs

@@ -1,0 +1,28 @@
+---
+- name: Install NVIDIA dependencies
+  ansible.builtin.dnf:
+    name:
+      - kernel-devel
+      - kernel-headers
+      - '@Development tools'
+    state: present
+
+- name: Add NVIDIA x86_64 CUDA repo
+  ansible.builtin.get_url:
+    url: 'https://developer.download.nvidia.com/compute/cuda/repos/rhel9/x86_64/cuda-rhel9.repo'
+    dest: /etc/yum.repos.d/cuda-rhel9.repo
+    mode: "0644"
+
+- name: Add NVIDIA Docker CTK repo
+  ansible.builtin.get_url:
+    url: 'https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo'
+    dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
+    mode: "0644"
+
+- name: Install NVIDIA driver and NVIDIA Docker Container Toolkit base
+  ansible.builtin.dnf:
+    name:
+      - "@nvidia-driver:open-dkms"
+      - "nvidia-container-toolkit-base"
+    state: present
+  notify: Reboot system

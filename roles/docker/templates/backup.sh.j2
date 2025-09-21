@@ -1,0 +1,33 @@
+#!/bin/bash
+
+set -eo pipefail
+
+trap cleanup EXIT
+
+cleanup() {
+    echo "Starting and enabling Docker.."
+    systemctl start docker
+    systemctl start docker.socket
+}
+
+DOCKER_BACKUP_SOURCE="{{ docker_base_dir }}"
+DOCKER_BACKUP_TARGET="{{ docker_backup_dir }}/$(hostname)"
+
+# Create backup output dir
+mkdir -p "$DOCKER_BACKUP_TARGET"
+
+# Make sure data dir exists.
+if [ ! -d "$DOCKER_BACKUP_SOURCE" ]; then
+    echo "Docker source directory does not exist."
+    exit 1
+fi
+
+# Stop and disable Docker
+echo "Stopping and disabling Docker..."
+systemctl stop docker.socket
+systemctl stop docker
+
+# Rsync data dir
+rsync -avh --delete "$DOCKER_BACKUP_SOURCE/" "$DOCKER_BACKUP_TARGET/"
+
+echo "All container mount directories have been backed up."

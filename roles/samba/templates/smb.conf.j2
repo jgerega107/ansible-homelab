@@ -1,0 +1,13 @@
+[global]
+    server role = standalone server
+    logging = systemd
+
+{% for share in samba_shares %}
+[{{ share.name }}]
+    path = {{ share.mount_point }}
+    browseable = yes
+    writable = yes
+    read only = no
+    guest ok = no
+    hosts allow = {{ share.allowed_subnets | join(' ') }}
+{% endfor %}

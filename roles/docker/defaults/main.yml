@@ -1,0 +1,11 @@
+# Base directory where to configure Docker
+docker_base_dir: "/srv/docker"
+# Directory for compose projects
+docker_compose_dir: "/srv/docker/compose"
+# Directory for volume data
+docker_data_dir: "/srv/docker/data"
+# Directory for volume backups
+docker_backup_dir: "/srv/docker/backups"
+
+# Whether or not to enable automatic backups of volumes
+docker_configure_backups: false

@@ -1,0 +1,6 @@
+---
+- name: Install ZFS
+  ansible.builtin.apt:
+    name: zfsutils-linux
+    update_cache: true
+  notify: Reboot system

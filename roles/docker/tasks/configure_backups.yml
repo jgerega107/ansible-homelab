@@ -1,0 +1,20 @@
+---
+- name: Template Docker data backup script
+  ansible.builtin.template:
+    src: backup.sh.j2
+    dest: "/usr/local/sbin/backup.sh"
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: Create Docker backup scheduled task
+  ansible.builtin.cron:
+    name: Docker volume backup
+    minute: "0" # 9am on the first of every month
+    hour: "9"
+    day: "1"
+    month: "*"
+    weekday: "*"
+    user: root
+    job: "/usr/local/sbin/backup.sh"
+    state: absent

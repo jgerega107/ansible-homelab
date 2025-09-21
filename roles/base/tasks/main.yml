@@ -1,0 +1,15 @@
+- name: Configure packages
+  ansible.builtin.import_tasks:
+    file: configure_packages.yml
+
+- name: Configure kernel
+  ansible.builtin.import_tasks:
+    file: configure_kernel.yml
+
+- name: Configure services
+  ansible.builtin.import_tasks:
+    file: configure_services.yml
+
+- name: Configure SSH
+  ansible.builtin.import_tasks:
+    file: configure_ssh.yml

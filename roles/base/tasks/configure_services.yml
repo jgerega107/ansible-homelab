@@ -1,0 +1,16 @@
+- name: Populate service facts
+  ansible.builtin.service_facts:
+
+- name: Enable fstrim timer
+  ansible.builtin.service:
+    name: fstrim.timer
+    enabled: true
+
+- name: Enable systemd-timesyncd
+  ansible.builtin.service:
+    name: systemd-timesyncd
+    enabled: true
+
+- name: Set timezone
+  community.general.timezone:
+    name: America/New_York

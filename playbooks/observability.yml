@@ -1,0 +1,37 @@
+- name: Configure observability
+  hosts: all
+  become: true
+  pre_tasks:
+    - name: Scan for SMART-capable drives
+      ansible.builtin.command: smartctl --scan
+      register: smartctl_output
+      changed_when: false
+  roles:
+    - prometheus.prometheus.node_exporter
+    - role: prometheus.prometheus.nvidia_gpu_exporter
+      when: inventory_hostname in groups["nvidia"]
+    - role: prometheus.prometheus.smartctl_exporter
+      when:
+        - ansible_virtualization_role != "guest"
+        - smartctl_output.stdout_lines | length != 0
+  tasks:
+    - name: Create Alloy directory
+      ansible.builtin.file:
+        name: "/etc/alloy"
+        mode: "0755"
+        owner: root
+        group: root
+        state: directory
+
+    - name: Template Alloy config
+      ansible.builtin.template:
+        src: templates/config.alloy.j2
+        dest: /etc/alloy/custom.alloy
+        mode: "0755"
+        owner: root
+        group: root
+      notify: restart alloy
+
+    - name: Run Alloy role
+      ansible.builtin.import_role:
+        name: grafana.grafana.alloy

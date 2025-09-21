@@ -1,0 +1,7 @@
+- name: Install NVIDIA drivers
+  hosts:
+    - nvidia
+  become: true
+  roles:
+    - nvidia
+    - nvidia_container_toolkit

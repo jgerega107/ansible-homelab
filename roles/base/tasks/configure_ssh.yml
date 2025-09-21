@@ -1,0 +1,26 @@
+---
+- name: Start sshd
+  ansible.builtin.service:
+    name: sshd
+    state: started
+    enabled: true
+
+- name: Configure sshd
+  ansible.builtin.lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regex: "^(#)?{{ item.key }}"
+    line: "{{ item.key }} {{ item.value }}"
+    state: present
+  loop:
+    - { key: "PermitRootLogin", value: "no" }
+    - { key: "PasswordAuthentication", value: "no" }
+    - { key: "PubkeyAuthentication", value: "yes" }
+  notify:
+    - Restart sshd
+
+- name: Remove sshd_config.d directory
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: absent
+  notify:
+    - Restart sshd

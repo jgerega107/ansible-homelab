@@ -1,0 +1,25 @@
+---
+- name: Create Docker dir
+  ansible.builtin.file:
+    path: "{{ docker_base_dir }}"
+    state: directory
+    mode: '0775'
+    owner: root
+    group: docker
+
+- name: Create Docker data dir
+  ansible.builtin.file:
+    path: "{{ docker_data_dir }}"
+    state: directory
+    mode: '0775'
+    owner: root
+    group: docker
+
+- name: Change group ownership of docker compose repo
+  ansible.builtin.file:
+    path: "{{ docker_compose_dir }}"
+    state: directory
+    mode: '0775'
+    owner: root
+    group: docker
+    recurse: true
