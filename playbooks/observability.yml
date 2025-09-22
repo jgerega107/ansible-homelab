@@ -9,7 +9,9 @@
   roles:
     - prometheus.prometheus.node_exporter
     - role: prometheus.prometheus.nvidia_gpu_exporter
-      when: inventory_hostname in groups["nvidia"]
+      when:
+        - if groups.nvidia is defined
+        - inventory_hostname in groups["nvidia"]
     - role: prometheus.prometheus.smartctl_exporter
       when:
         - ansible_virtualization_role != "guest"
