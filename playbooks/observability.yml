@@ -10,7 +10,7 @@
     - prometheus.prometheus.node_exporter
     - role: prometheus.prometheus.nvidia_gpu_exporter
       when:
-        - if groups.nvidia is defined
+        - groups.nvidia is defined
         - inventory_hostname in groups.nvidia
     - role: prometheus.prometheus.smartctl_exporter
       when:
