@@ -14,3 +14,68 @@
 - name: Set timezone
   community.general.timezone:
     name: America/New_York
+
+- name: Check if netplan is installed
+  ansible.builtin.stat:
+    path: /usr/sbin/netplan
+  register: netplan_check
+
+- name: Reconfigure netplan to use NetworkManager
+  when:
+    - ansible_distribution == "Ubuntu"
+    - netplan_check.stat.exists
+  block:
+    - name: Install NetworkManager
+      ansible.builtin.package:
+        name: network-manager
+        state: present
+
+    - name: Remove cloud-init netplan configuration
+      ansible.builtin.file:
+        path: /etc/netplan/50-cloud-init.yaml
+        state: absent
+      register: netplan_cloud_init_removed
+      notify: Reboot system
+
+    - name: Create netplan configuration
+      ansible.builtin.copy:
+        content: |
+          network:
+            version: 2
+            renderer: NetworkManager
+        dest: /etc/netplan/01-network-manager.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      register: netplan_config
+      notify: Reboot system
+
+    - name: Stop/disable/mask systemd-networkd service
+      ansible.builtin.systemd_service:
+        name: systemd-networkd.service
+        state: stopped
+        enabled: false
+        masked: true
+      register: networkd_service_stopped
+      failed_when: false
+      notify: Reboot system
+
+    - name: Stop/disable/mask systemd-networkd.socket service
+      ansible.builtin.systemd_service:
+        name: systemd-networkd.socket
+        state: stopped
+        enabled: false
+        masked: true
+      register: networkd_socket_stopped
+      failed_when: false
+      notify: Reboot system
+
+    - name: Stop/disable/mask systemd-networkd-wait-online service
+      ansible.builtin.systemd_service:
+        name: systemd-networkd-wait-online.service
+        state: stopped
+        enabled: false
+        masked: true
+      register: networkd_wait_socket_stopped
+      failed_when: false
+      notify: Reboot system
