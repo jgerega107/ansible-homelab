@@ -7,4 +7,3 @@ base_packages:
   - git
   - smartmontools
   - epel-release
-  - cockpit
