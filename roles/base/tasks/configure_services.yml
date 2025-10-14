@@ -18,12 +18,12 @@
 - name: Check if netplan is installed
   ansible.builtin.stat:
     path: /usr/sbin/netplan
-  register: netplan_check
+  register: base_netplan_check
 
 - name: Reconfigure netplan to use NetworkManager
   when:
     - ansible_distribution == "Ubuntu"
-    - netplan_check.stat.exists
+    - base_netplan_check.stat.exists
   block:
     - name: Install NetworkManager
       ansible.builtin.package:
@@ -34,7 +34,6 @@
       ansible.builtin.file:
         path: /etc/netplan/50-cloud-init.yaml
         state: absent
-      register: netplan_cloud_init_removed
       notify: Reboot system
 
     - name: Create netplan configuration
@@ -47,7 +46,6 @@
         owner: root
         group: root
         mode: '0644'
-      register: netplan_config
       notify: Reboot system
 
     - name: Stop/disable/mask systemd-networkd service
@@ -56,7 +54,6 @@
         state: stopped
         enabled: false
         masked: true
-      register: networkd_service_stopped
       failed_when: false
       notify: Reboot system
 
@@ -66,7 +63,6 @@
         state: stopped
         enabled: false
         masked: true
-      register: networkd_socket_stopped
       failed_when: false
       notify: Reboot system
 
@@ -76,6 +72,5 @@
         state: stopped
         enabled: false
         masked: true
-      register: networkd_wait_socket_stopped
       failed_when: false
       notify: Reboot system
