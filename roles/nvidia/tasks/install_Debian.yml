@@ -5,19 +5,10 @@
     state: present
     update_cache: true
 
-- name: Add NVIDIA CTK repo
-  ansible.builtin.deb822_repository:
-    name: nvidia-ctk
-    types: deb
-    uris: https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH)
-    suites: '/'
-    signed_by: https://nvidia.github.io/libnvidia-container/gpgkey
-
-- name: Install NVIDIA driver and NVIDIA Docker Container Toolkit base
+- name: Install NVIDIA driver
   ansible.builtin.apt:
     package:
       - linux-modules-nvidia-580-server-open-{{ ansible_kernel }}
-      - nvidia-container-toolkit
     state: present
     update_cache: true
   notify: Reboot system

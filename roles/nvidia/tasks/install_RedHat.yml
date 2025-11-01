@@ -13,16 +13,9 @@
     dest: /etc/yum.repos.d/cuda-rhel9.repo
     mode: "0644"
 
-- name: Add NVIDIA Docker CTK repo
-  ansible.builtin.get_url:
-    url: 'https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo'
-    dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
-    mode: "0644"
-
-- name: Install NVIDIA driver and NVIDIA Docker Container Toolkit base
+- name: Install NVIDIA driver
   ansible.builtin.dnf:
     name:
       - "@nvidia-driver:open-dkms"
-      - "nvidia-container-toolkit-base"
     state: present
   notify: Reboot system

@@ -11,3 +11,8 @@
   ansible.builtin.package:
     name: firewalld
     state: absent
+
+- name: Remove snapd
+  ansible.builtin.package:
+    name: snapd
+    state: absent

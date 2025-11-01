@@ -48,6 +48,9 @@
         mode: '0644'
       notify: Reboot system
 
+    - name: Apply netplan configuration # noqa no-changed-when
+      ansible.builtin.command: netplan apply
+
     - name: Stop/disable/mask systemd-networkd service
       ansible.builtin.systemd_service:
         name: systemd-networkd.service
