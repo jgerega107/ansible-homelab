@@ -1,1 +1,0 @@
-ACTION=="add|bind", KERNEL=="nvidia", RUN+="/usr/bin/nvidia-ctk cdi generate --output=/var/run/cdi/nvidia.yaml"
