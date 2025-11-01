@@ -4,3 +4,4 @@
   become: true
   roles:
     - nvidia
+    - nvidia_container_toolkit
