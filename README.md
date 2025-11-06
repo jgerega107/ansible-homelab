@@ -2,11 +2,13 @@
 
 #### WORK IN PROGRESS!
 Ansible collection used to provisioning my homelab. Some roles I've created do the following:
-- Install drivers (Nvidia, ZFS) for RHEL9 and Ubuntu systems
-- Install/manage Docker on RHEL9/Ubuntu systems
+- Install drivers (Nvidia, ZFS) for Debian systems
+- Install/manage Docker on Debian systems
 - Install/configure stateless observability agents (Grafana Alloy)
 - Install/manage Samba
 - And more
+
+# This is only tested on Debian 13.
 
 ## Potential future plans
 - Set up molecule (vagrant backend? need vagrant boxes representative of homelab OSes)
@@ -16,6 +18,7 @@ Ansible collection used to provisioning my homelab. Some roles I've created do t
 - Manage prometheus config/rulesets?
 - Makefile for common operations
 - Limited windows support?
+- Low priority, but other OS support? RHEL
 
 ## Usage
 
