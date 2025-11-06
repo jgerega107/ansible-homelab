@@ -1,7 +1,3 @@
-- name: Include OS specific variables
-  ansible.builtin.include_vars:
-    file: "{{ ansible_os_family }}.yml"
-
 - name: Install base packages
   ansible.builtin.package:
     name: "{{ base_packages }}"

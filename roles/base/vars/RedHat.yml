@@ -1,9 +1,0 @@
----
-base_packages:
-  - btop
-  - nano
-  - ncdu
-  - systemd-timesyncd
-  - git
-  - smartmontools
-  - epel-release

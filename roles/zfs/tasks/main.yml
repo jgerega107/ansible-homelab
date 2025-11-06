@@ -1,7 +1,9 @@
 ---
-- name: Include ZFS install tasks
-  ansible.builtin.include_tasks:
-    file: "install_{{ ansible_os_family }}.yml"
+- name: Install ZFS
+  ansible.builtin.apt:
+    name: zfsutils-linux
+    update_cache: true
+  notify: Reboot system
 
 - name: Copy over ZFS key load service
   ansible.builtin.copy:
@@ -17,6 +19,3 @@
     name: zfs-load-key
     enabled: true
   notify: Reboot system
-
-- name: Flush handlers
-  ansible.builtin.meta: flush_handlers
