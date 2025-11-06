@@ -5,14 +5,25 @@
     state: present
     update_cache: true
 
-- name: Install NVIDIA driver
-  ansible.builtin.apt:
-    package:
-      - nvidia-open-kernel-dkms
-      - nvidia-driver
-      - firmware-misc-nonfree
+- name: Enable contrib repository
+  ansible.builtin.apt_repository:
+    repo: deb http://deb.debian.org/debian {{ ansible_distribution_release }} contrib
     state: present
+    update_cache: false
+
+# Doesn't support debian13 for some reason?
+- name: Install CUDA keyring package
+  ansible.builtin.apt:
+    deb: https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb
+    state: present
+
+- name: Install NVIDIA driver with open kernel modules
+  ansible.builtin.apt:
+    name:
+      - nvidia-driver-cuda
+      - nvidia-kernel-open-dkms
     update_cache: true
+    state: present
   notify: Reboot system
 
 - name: Configure NVIDIA Docker Container Toolkit
@@ -41,11 +52,3 @@
         owner: root
         mode: "0644"
       notify: Restart docker
-
-    - name: Copy over Nvidia CDI regeneration udev rule
-      ansible.builtin.copy:
-        src: files/70-nvidia-ctk.rules
-        dest: /lib/udev/rules.d/70-nvidia-ctk.rules
-        group: root
-        owner: root
-        mode: "0644"

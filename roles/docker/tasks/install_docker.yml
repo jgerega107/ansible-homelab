@@ -16,6 +16,7 @@
     name:
       - ca-certificates
       - curl
+      - gpg
 
 - name: Add Docker GPG key
   ansible.builtin.get_url:
