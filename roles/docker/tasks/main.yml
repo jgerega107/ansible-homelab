@@ -1,15 +1,11 @@
 ---
-- name: Include OS specific variables
-  ansible.builtin.include_vars:
-    file: "{{ ansible_os_family }}.yml"
-
-- name: Include Docker install tasks
-  ansible.builtin.include_tasks:
-    file: "install_{{ ansible_os_family }}.yml"
-
 - name: Configure Docker data dir
   ansible.builtin.include_tasks:
     file: configure_data_dir.yml
+
+- name: Install Docker
+  ansible.builtin.include_tasks:
+    file: install_docker.yml
 
 # - name: Configure Docker backups
 #   ansible.builtin.include_tasks:

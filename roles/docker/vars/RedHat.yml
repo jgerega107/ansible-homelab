@@ -1,2 +1,0 @@
----
-__docker_arch: "{{ ansible_architecture }}"

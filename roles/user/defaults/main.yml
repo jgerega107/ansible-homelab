@@ -1,8 +1,0 @@
-# user_users:
-#   - name: user
-#     description: "description"
-#     shell: /bin/bash
-#     groups:
-#       - wheel
-#       - docker
-#     ssh_pub_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDFt1y7Y4m8bX4..."

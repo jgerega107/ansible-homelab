@@ -1,6 +1,6 @@
 # Samba role
 
-Role to install/configure Samba on a storage server. Only tested on RHEL9.
+Role to install/configure Samba on a storage server. Tested on Ubuntu/Debian type systems as well as RHEL.
 
 ## Important: You'll still need to create a Samba password via the following command.
 `smbpasswd -a <your Linux username>`

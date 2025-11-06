@@ -14,7 +14,7 @@ discovery.relabel "docker_log_relabel" {
 		target_label  = "project_name"
 	}
 }
-
+{% if alloy_enable_prometheus_scraping | default(true) %}
 discovery.relabel "docker_metric_relabel_bridge" {
 	targets = discovery.docker.linux.targets
 
@@ -82,6 +82,7 @@ discovery.relabel "docker_metric_relabel_host" {
 		replacement   = string.format("%s:%s", constants.hostname, "$1")
 	}
 }
+
 // Prometheus Exporters
 prometheus.exporter.self "alloy_exporter" { }
 prometheus.scrape "alloy_exporter_job" {
@@ -141,6 +142,7 @@ prometheus.scrape "gpu_exporter" {
 	forward_to = [prometheus.remote_write.prom_remote.receiver]
 }
 {% endif %}
+{% endif %}
 
 // Loki
 loki.source.docker "docker_log_scrape" {
@@ -163,6 +165,7 @@ loki.relabel "log_relabel" {
 }
 
 // Receivers
+{% if alloy_enable_prometheus_scraping | default(true) %}
 prometheus.remote_write "prom_remote" {
 	endpoint {
 		url = "{{ alloy_remote_write_endpoint }}"
@@ -177,6 +180,7 @@ prometheus.remote_write "prom_remote" {
 
 	external_labels = {"hostname" = constants.hostname}
 }
+{% endif %}
 loki.write "loki_remote" {
 	endpoint {
 		url = "{{ alloy_remote_log_endpoint }}"

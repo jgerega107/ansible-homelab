@@ -1,14 +1,10 @@
 ---
-- name: Include OS specific variables
-  ansible.builtin.include_vars:
-    file: "{{ ansible_os_family }}.yml"
-
 - name: Create/Update users
   ansible.builtin.user:
     name: "{{ item.name }}"
     comment: "{{ item.description }}"
     shell: "{{ item.shell }}"
-    groups: "{{ item.groups }}"
+    groups: "{{ user_groups + (item.additional_groups | default([])) }}"
     append: true
     state: present
     create_home: true
@@ -30,6 +26,4 @@
     state: present
   with_nested:
     - "{{ user_users }}"
-    -
-      - "export EDITOR=nano"
-      - 'alias dc="docker compose"'
+    - "{{ user_additional_bash_config | default([]) }}"
