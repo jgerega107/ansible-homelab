@@ -4,3 +4,9 @@
   roles:
     - user
     - base
+
+- name: Install and configure Cockpit
+  hosts: cockpit
+  become: true
+  roles:
+    - cockpit

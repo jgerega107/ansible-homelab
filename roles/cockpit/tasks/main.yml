@@ -1,0 +1,19 @@
+---
+- name: Add Debian backports repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
+    state: present
+    update_cache: true
+
+- name: Install Cockpit from backports
+  ansible.builtin.apt:
+    name: cockpit
+    state: present
+    default_release: "{{ ansible_distribution_release }}-backports"
+
+- name: Install Cockpit Machines from backports
+  ansible.builtin.apt:
+    name: cockpit-machines
+    state: present
+    default_release: "{{ ansible_distribution_release }}-backports"
+  when: cockpit_hypervisor_enabled | default(false) | bool
