@@ -1,0 +1,62 @@
+// Loki Log Collection
+loki.source.docker "docker_log_scrape" {
+	host          = "unix:///var/run/docker.sock"
+	targets       = discovery.relabel.docker_log_relabel.output
+	forward_to    = [loki.write.loki_remote.receiver]
+}
+
+loki.source.journal "journal_log_scrape"  {
+	forward_to    = [loki.write.loki_remote.receiver]
+	labels        = {"job" = "systemd-journal"}
+	relabel_rules = loki.relabel.log_relabel.rules
+}
+
+loki.relabel "log_relabel" {
+	forward_to = []
+
+	rule {
+		source_labels = ["__journal__systemd_unit"]
+		target_label  = "service_name"
+	}
+}
+
+{% if alloy_caddy_logs_enabled | default(false) %}
+loki.source.file "caddy_logs" {
+  targets    = [
+    {__path__ = "/srv/docker/data/caddy/caddy.log", "service_name" = "caddy"},
+  ]
+  forward_to = [loki.process.caddy_json.receiver]
+}
+
+loki.process "caddy_json" {
+  forward_to = [loki.write.loki_remote.receiver]
+
+  stage.json {
+    expressions = {
+      upstream = "request.host",
+      source_addr = "request.remote_ip",
+    }
+  }
+
+  stage.labels {
+    values = {
+      upstream = "",
+      source_addr = "",
+    }
+  }
+}
+{% endif %}
+
+// Loki Remote Write
+loki.write "loki_remote" {
+	endpoint {
+		url = "{{ alloy_remote_log_endpoint }}"
+{% if groups.remote is defined and inventory_hostname in groups.remote %}
+		basic_auth {
+			username = "{{ alloy_basic_auth_username }}"
+			password = "{{ alloy_basic_auth_password }}"
+		}
+{% endif %}
+	}
+	external_labels = {"hostname" = constants.hostname}
+}

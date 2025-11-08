@@ -7,12 +7,29 @@
       register: smartctl_output
       changed_when: false
   roles:
-    - prometheus.prometheus.node_exporter
+    - role: prometheus.prometheus.node_exporter
+      vars:
+        node_exporter_version: "1.10.2"
+        node_exporter_enabled_collectors:
+          - systemd
+          - processes
+          - filesystem:
+              ignored-mount-points: "^/(sys|proc|dev|boot|run|var)($|/)"
+              ignored-fs-types: "^(sys|proc|auto|squash)(fs|$)|nfs4$"
+          - netdev:
+              device-exclude: "^(br|veth).*"
     - role: prometheus.prometheus.nvidia_gpu_exporter
+      vars:
+        nvidia_gpu_exporter_version: 1.4.1
       when:
         - groups.nvidia is defined
         - inventory_hostname in groups.nvidia
     - role: prometheus.prometheus.smartctl_exporter
+      vars:
+        smartctl_exporter_version: 0.14.0
+        smartctl_exporter_system_group: "root" # cannot detect devices without root user/group
+        smartctl_exporter_system_user: "root"
+        smartctl_exporter_smartctl_device_exclude: "bus*" # exclude megaraid devices (detected on r730)
       when:
         - ansible_virtualization_role != "guest"
         - smartctl_output.stdout_lines | length != 0
@@ -25,15 +42,47 @@
         group: root
         state: directory
 
-    - name: Template Alloy config
+    - name: Template Alloy discovery config
       ansible.builtin.template:
-        src: templates/config.alloy.j2
-        dest: /etc/alloy/custom.alloy
-        mode: "0755"
+        src: templates/config.alloy.discovery.j2
+        dest: /etc/alloy/discovery.alloy
+        mode: "0644"
         owner: root
         group: root
+      notify: restart alloy
+
+    - name: Template Alloy Prometheus config
+      ansible.builtin.template:
+        src: templates/config.alloy.prometheus.j2
+        dest: /etc/alloy/prometheus.alloy
+        mode: "0644"
+        owner: root
+        group: root
+      notify: restart alloy
+      when: alloy_enable_prometheus_scraping | default(true)
+
+    - name: Template Alloy Loki config
+      ansible.builtin.template:
+        src: templates/config.alloy.loki.j2
+        dest: /etc/alloy/loki.alloy
+        mode: "0644"
+        owner: root
+        group: root
+      notify: restart alloy
+
+    - name: Remove custom Alloy config
+      ansible.builtin.file:
+        path: /etc/alloy/custom.alloy
+        state: absent
       notify: restart alloy
 
     - name: Run Alloy role
       ansible.builtin.import_role:
         name: grafana.grafana.alloy
+      vars:
+        alloy_env_file_vars:
+          CUSTOM_ARGS: "--server.http.listen-addr=0.0.0.0:12345"
+          CONFIG_FILE: "/etc/alloy/"
+        alloy_systemd_override: |
+          [Service]
+          User=root
