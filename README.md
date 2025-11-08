@@ -50,5 +50,5 @@ ansible-galaxy install -r requirements.yml
 
 ### 2. Run playbook
 ```
-ansible-playbook homelab.jgerega.docker -i yourinventoryhere.yml -K
+ansible-playbook jgerega.homelab.docker -i yourinventoryhere.yml
 ```
