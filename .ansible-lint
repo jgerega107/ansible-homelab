@@ -10,6 +10,4 @@ profile: null # min, basic, moderate,safety, shared, production
 # and not relative to the CWD of execution. CLI arguments passed to the --exclude
 # option are parsed relative to the CWD of execution.
 exclude_paths:
-  - roles/docker_compose/files
-  - roles/prometheus/files
   - .venv

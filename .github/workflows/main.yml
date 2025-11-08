@@ -14,3 +14,4 @@ jobs:
         with:
           setup_python: "true"
           requirements_file: "requirements.yml"
+          working_directory: "homelab/"
