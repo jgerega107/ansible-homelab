@@ -23,8 +23,8 @@ loki.relabel "log_relabel" {
 {% if alloy_caddy_logs_enabled | default(false) %}
 loki.source.file "caddy_logs" {
   targets    = [
-    {__path__ = "/srv/docker/data/caddy/caddy.log", "service_name" = "caddy"},
-    {__path__ = "/srv/docker/data/caddy/caddy-error.log", "service_name" = "caddy"},
+    {__path__ = "/srv/docker/data/caddy/logs/caddy.log", "service_name" = "caddy"},
+    {__path__ = "/srv/docker/data/caddy/logs/caddy-error.log", "service_name" = "caddy"},
   ]
   forward_to = [loki.process.caddy_json.receiver]
 }
