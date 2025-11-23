@@ -5,11 +5,11 @@ discovery.relabel "docker_metric_relabel_bridge" {
 	rule {
 		source_labels = ["__meta_docker_container_name"]
 		regex         = "/(.*)"
-		target_label  = "container_name"
+		target_label  = "service_name"
 	}
 	rule {
 		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
-		target_label  = "project_name"
+		target_label  = "service"
 	}
 	rule {
 		source_labels = ["__meta_docker_container_label_metrics_port"]
@@ -39,11 +39,11 @@ discovery.relabel "docker_metric_relabel_host" {
 	rule {
 		source_labels = ["__meta_docker_container_name"]
 		regex         = "/(.*)"
-		target_label  = "container_name"
+		target_label  = "service_name"
 	}
 	rule {
 		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
-		target_label  = "project_name"
+		target_label  = "service"
 	}
 	rule {
 		source_labels = ["__meta_docker_container_label_metrics_port"]
@@ -80,25 +80,6 @@ prometheus.scrape "docker_container_metrics_bridge" {
 prometheus.scrape "docker_container_metrics_host" {
 	targets    = discovery.relabel.docker_metric_relabel_host.output
 	forward_to = [prometheus.remote_write.prom_remote.receiver]
-}
-prometheus.exporter.blackbox "alive_probes" {
-	config = "{ modules: { icmp: { prober: icmp }, http_2xx: { prober: http, http: { follow_redirects: true, preferred_ip_protocol: ip4 } } } }"
-	target {
-		name = "gateway_icmp"
-		address = "{{ ansible_default_ipv4.gateway }}"
-		module = "icmp"
-	}
-	target {
-		name = "google_http"
-		address = "https://google.com"
-		module = "http_2xx"
-	}
-}
-prometheus.scrape "alive_probe_scrapes" {
-	targets    = prometheus.exporter.blackbox.alive_probes.targets
-	forward_to = [prometheus.remote_write.prom_remote.receiver]
-	scrape_interval = "30s"
-	scrape_timeout = "5s"
 }
 prometheus.exporter.cadvisor "docker" {
 	docker_host = "unix:///var/run/docker.sock"

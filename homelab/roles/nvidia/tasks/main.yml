@@ -1,7 +1,7 @@
 ---
-- name: Install Linux headers for current kernel
+- name: Install Linux headers
   ansible.builtin.apt:
-    name: linux-headers-{{ ansible_kernel }}
+    name: linux-headers-amd64
     state: present
     update_cache: true
 

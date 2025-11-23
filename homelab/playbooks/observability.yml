@@ -42,33 +42,29 @@
         group: root
         state: directory
 
-    - name: Template Alloy discovery config
+    - name: Template base Alloy configs
       ansible.builtin.template:
-        src: templates/config.alloy.discovery.j2
-        dest: /etc/alloy/discovery.alloy
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
         mode: "0644"
         owner: root
         group: root
       notify: restart alloy
+      loop:
+        - { src: 'templates/config.alloy.discovery.j2', dest: '/etc/alloy/discovery.alloy' }
+        - { src: 'templates/config.alloy.loki.j2', dest: '/etc/alloy/loki.alloy' }
 
-    - name: Template Alloy Prometheus config
+    - name: Template Prometheus scrape Alloy configs
       ansible.builtin.template:
-        src: templates/config.alloy.prometheus.j2
-        dest: /etc/alloy/prometheus.alloy
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
         mode: "0644"
         owner: root
         group: root
       notify: restart alloy
+      loop:
+        - { src: 'templates/config.alloy.prometheus.j2', dest: '/etc/alloy/prometheus.alloy' }
       when: alloy_enable_prometheus_scraping | default(true)
-
-    - name: Template Alloy Loki config
-      ansible.builtin.template:
-        src: templates/config.alloy.loki.j2
-        dest: /etc/alloy/loki.alloy
-        mode: "0644"
-        owner: root
-        group: root
-      notify: restart alloy
 
     - name: Remove custom Alloy config
       ansible.builtin.file:
