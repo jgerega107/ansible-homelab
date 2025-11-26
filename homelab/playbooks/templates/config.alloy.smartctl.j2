@@ -1,0 +1,6 @@
+prometheus.scrape "smartctl_exporter" {
+	targets = [
+		{"__address__" = string.format("%s:%s", constants.hostname, "9633"), "job" = "smartctl_exporter"},
+	]
+	forward_to = [prometheus.remote_write.prom_remote.receiver]
+}

@@ -15,3 +15,71 @@ discovery.relabel "docker_log_relabel" {
 		target_label  = "project_name"
 	}
 }
+
+discovery.relabel "docker_metric_relabel_bridge" {
+	targets = discovery.docker.linux.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "service_name"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		target_label  = "service"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		regex         = "(.+)"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		target_label = "__meta_docker_port_private"
+		action        = "keepequal"
+	}
+	rule {
+		source_labels = ["__meta_docker_port_public"]
+		target_label  = "__address__"
+		replacement   = "localhost:$1"
+	}
+	rule {
+		source_labels = ["__meta_docker_port_public"]
+		target_label  = "instance"
+		replacement   = string.format("%s:%s", constants.hostname, "$1")
+	}
+}
+
+discovery.relabel "docker_metric_relabel_host" {
+	targets = discovery.docker.linux.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "service_name"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		target_label  = "service"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		regex         = "(.+)"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_network_mode"]
+		regex 		  = "host"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		target_label  = "__address__"
+		replacement   = "localhost:$1"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		target_label  = "instance"
+		replacement   = string.format("%s:%s", constants.hostname, "$1")
+	}
+}

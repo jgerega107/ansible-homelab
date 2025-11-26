@@ -8,31 +8,12 @@
       changed_when: false
   roles:
     - role: prometheus.prometheus.node_exporter
-      vars:
-        node_exporter_version: "1.10.2"
-        node_exporter_enabled_collectors:
-          - systemd
-          - processes
-          - filesystem:
-              ignored-mount-points: "^/(sys|proc|dev|boot|run|var)($|/)"
-              ignored-fs-types: "^(sys|proc|auto|squash)(fs|$)|nfs4$"
-          - netdev:
-              device-exclude: "^(br|veth).*"
-    - role: prometheus.prometheus.nvidia_gpu_exporter
-      vars:
-        nvidia_gpu_exporter_version: 1.4.1
-      when:
-        - groups.nvidia is defined
-        - inventory_hostname in groups.nvidia
     - role: prometheus.prometheus.smartctl_exporter
-      vars:
-        smartctl_exporter_version: 0.14.0
-        smartctl_exporter_system_group: "root" # cannot detect devices without root user/group
-        smartctl_exporter_system_user: "root"
-        smartctl_exporter_smartctl_device_exclude: "bus*" # exclude megaraid devices (detected on r730)
       when:
         - ansible_virtualization_role != "guest"
         - smartctl_output.stdout_lines | length != 0
+    - role: prometheus.prometheus.nvidia_gpu_exporter
+      when: inventory_hostname in groups['nvidia']
   tasks:
     - name: Create Alloy directory
       ansible.builtin.file:
@@ -42,7 +23,7 @@
         group: root
         state: directory
 
-    - name: Template base Alloy configs
+    - name: Template Alloy configs
       ansible.builtin.template:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
@@ -50,11 +31,9 @@
         owner: root
         group: root
       notify: restart alloy
-      loop:
-        - { src: 'templates/config.alloy.discovery.j2', dest: '/etc/alloy/discovery.alloy' }
-        - { src: 'templates/config.alloy.loki.j2', dest: '/etc/alloy/loki.alloy' }
+      loop: "{{ alloy_configs | default([]) }}"
 
-    - name: Template Prometheus scrape Alloy configs
+    - name: Template Alloy Nvidia scrape configs
       ansible.builtin.template:
         src: "{{ item.src }}"
         dest: "{{ item.dest }}"
@@ -63,8 +42,22 @@
         group: root
       notify: restart alloy
       loop:
-        - { src: 'templates/config.alloy.prometheus.j2', dest: '/etc/alloy/prometheus.alloy' }
-      when: alloy_enable_prometheus_scraping | default(true)
+        - { src: 'templates/config.alloy.nvidia.j2', dest: '/etc/alloy/nvidia.alloy' }
+      when: inventory_hostname in groups['nvidia']
+
+    - name: Template Alloy SMART configs
+      ansible.builtin.template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        mode: "0644"
+        owner: root
+        group: root
+      notify: restart alloy
+      loop:
+        - { src: 'templates/config.alloy.smartctl.j2', dest: '/etc/alloy/smartctl.alloy' }
+      when:
+        - ansible_virtualization_role != "guest"
+        - smartctl_output.stdout_lines | length != 0
 
     - name: Remove custom Alloy config
       ansible.builtin.file:

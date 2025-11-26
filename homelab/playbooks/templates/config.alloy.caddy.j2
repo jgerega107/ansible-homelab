@@ -1,0 +1,28 @@
+local.file_match "logs" {
+  path_targets = [
+    {__path__ = "/srv/docker/data/caddy/logs/*.log", "service" = "ingress"},
+  ]
+}
+
+loki.source.file "caddy_logs" {
+  targets    = local.file_match.logs.targets
+  forward_to = [loki.process.caddy_json.receiver]
+}
+
+loki.process "caddy_json" {
+  forward_to = [loki.write.loki_remote.receiver]
+
+  stage.json {
+    expressions = {
+      upstream = "request.host",
+      source_addr = "request.remote_ip",
+    }
+  }
+
+  stage.labels {
+    values = {
+      upstream = "",
+      source_addr = "",
+    }
+  }
+}

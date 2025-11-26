@@ -20,37 +20,6 @@ loki.relabel "log_relabel" {
 	}
 }
 
-{% if alloy_caddy_logs_enabled | default(false) %}
-local.file_match "logs" {
-  path_targets = [
-    {__path__ = "/srv/docker/data/caddy/logs/*.log", "service" = "ingress", "service_name" = "ingress-caddy-1"},
-  ]
-}
-
-loki.source.file "caddy_logs" {
-  targets    = local.file_match.logs.targets
-  forward_to = [loki.process.caddy_json.receiver]
-}
-
-loki.process "caddy_json" {
-  forward_to = [loki.write.loki_remote.receiver]
-
-  stage.json {
-    expressions = {
-      upstream = "request.host",
-      source_addr = "request.remote_ip",
-    }
-  }
-
-  stage.labels {
-    values = {
-      upstream = "",
-      source_addr = "",
-    }
-  }
-}
-{% endif %}
-
 // Loki Remote Write
 loki.write "loki_remote" {
 	endpoint {
