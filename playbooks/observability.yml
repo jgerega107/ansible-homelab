@@ -59,12 +59,6 @@
         - ansible_virtualization_role != "guest"
         - smartctl_output.stdout_lines | length != 0
 
-    - name: Remove custom Alloy config
-      ansible.builtin.file:
-        path: /etc/alloy/custom.alloy
-        state: absent
-      notify: restart alloy
-
     - name: Run Alloy role
       ansible.builtin.import_role:
         name: grafana.grafana.alloy
