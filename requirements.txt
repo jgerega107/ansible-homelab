@@ -1,4 +1,4 @@
-ansible==11.9.0
+ansible==13.0.0
 ansible-lint==25.8.2
 netaddr
 molecule==25.7.0
