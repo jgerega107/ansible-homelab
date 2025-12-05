@@ -1,8 +1,9 @@
 ---
-- name: Install ZFS
+- name: Install ZFS from backports
   ansible.builtin.apt:
     name: zfsutils-linux
-    update_cache: true
+    state: present
+    default_release: "{{ ansible_distribution_release }}-backports"
   notify: Reboot system
 
 - name: Copy over ZFS key load service

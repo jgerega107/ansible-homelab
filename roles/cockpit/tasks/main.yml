@@ -1,10 +1,4 @@
 ---
-- name: Add Debian backports repository
-  ansible.builtin.apt_repository:
-    repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main"
-    state: present
-    update_cache: true
-
 - name: Install Cockpit from backports
   ansible.builtin.apt:
     name: cockpit

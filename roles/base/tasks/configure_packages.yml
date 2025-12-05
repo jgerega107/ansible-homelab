@@ -1,3 +1,9 @@
+- name: Add Debian backports repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://deb.debian.org/debian {{ ansible_distribution_release }}-backports main contrib non-free"
+    state: present
+    update_cache: true
+
 - name: Install base packages
   ansible.builtin.package:
     name: "{{ base_packages }}"

@@ -1,0 +1,6 @@
+- name: Install Cockpit
+  hosts:
+    - all
+  become: true
+  roles:
+    - cockpit

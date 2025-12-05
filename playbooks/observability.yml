@@ -15,6 +15,22 @@
     - role: prometheus.prometheus.nvidia_gpu_exporter
       when: inventory_hostname in groups['nvidia']
   tasks:
+    - name: Validate alloy_remote_write_endpoint is defined
+      ansible.builtin.assert:
+        that:
+          - alloy_remote_write_endpoint is defined
+          - alloy_remote_write_endpoint | length > 0
+        fail_msg: "alloy_remote_write_endpoint must be defined and not empty"
+        success_msg: "alloy_remote_write_endpoint is defined: {{ alloy_remote_write_endpoint }}"
+
+    - name: Validate alloy_remote_log_endpoint is defined
+      ansible.builtin.assert:
+        that:
+          - alloy_remote_log_endpoint is defined
+          - alloy_remote_log_endpoint | length > 0
+        fail_msg: "alloy_remote_log_endpoint must be defined and not empty"
+        success_msg: "alloy_remote_log_endpoint is defined: {{ alloy_remote_log_endpoint }}"
+
     - name: Create Alloy directory
       ansible.builtin.file:
         name: "/etc/alloy"
@@ -31,7 +47,12 @@
         owner: root
         group: root
       notify: restart alloy
-      loop: "{{ alloy_configs | default([]) }}"
+      loop: "{{ alloy_configs }}"
+      vars:
+        alloy_configs:
+          - { src: 'templates/config.alloy.discovery.j2', dest: '/etc/alloy/discovery.alloy' }
+          - { src: 'templates/config.alloy.prometheus.j2', dest: '/etc/alloy/prometheus.alloy' }
+          - { src: 'templates/config.alloy.loki.j2', dest: '/etc/alloy/loki.alloy' }
 
     - name: Template Alloy Nvidia scrape configs
       ansible.builtin.template:
