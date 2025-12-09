@@ -1,10 +1,74 @@
+// Prometheus discovery relabeling
+discovery.relabel "docker_metric_relabel_bridge" {
+	targets = discovery.docker.linux.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container_name"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		target_label  = "project_name"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		regex         = "(.+)"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		target_label = "__meta_docker_port_private"
+		action        = "keepequal"
+	}
+	rule {
+		source_labels = ["__meta_docker_port_public"]
+		target_label  = "__address__"
+		replacement   = "localhost:$1"
+	}
+	rule {
+		source_labels = ["__meta_docker_port_public"]
+		target_label  = "instance"
+		replacement   = string.format("%s:%s", constants.hostname, "$1")
+	}
+}
+
+discovery.relabel "docker_metric_relabel_host" {
+	targets = discovery.docker.linux.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container_name"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		target_label  = "project_name"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		regex         = "(.+)"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_network_mode"]
+		regex 		  = "host"
+		action        = "keep"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		target_label  = "__address__"
+		replacement   = "localhost:$1"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_metrics_port"]
+		target_label  = "instance"
+		replacement   = string.format("%s:%s", constants.hostname, "$1")
+	}
+}
+
 // Prometheus Exporters
 prometheus.exporter.self "alloy_exporter" { }
-
-prometheus.scrape "alloy_exporter_job" {
-	targets    = prometheus.exporter.self.alloy_exporter.targets
-	forward_to = [prometheus.remote_write.prom_remote.receiver]
-}
 
 prometheus.scrape "docker_container_metrics_bridge" {
 	targets    = discovery.relabel.docker_metric_relabel_bridge.output
@@ -24,9 +88,27 @@ prometheus.exporter.cadvisor "docker" {
 prometheus.scrape "base_exporters" {
 	targets = array.concat([
 		{"__address__" = string.format("%s:%s", constants.hostname, "9100"), "job" = "node_exporter"},
-	], prometheus.exporter.cadvisor.docker.targets)
+	], prometheus.exporter.cadvisor.docker.targets, prometheus.exporter.self.alloy_exporter.targets)
 	forward_to = [prometheus.remote_write.prom_remote.receiver]
 }
+
+{% if groups.nvidia is defined and inventory_hostname in groups.nvidia %}
+prometheus.scrape "gpu_exporter" {
+	targets = [
+		{"__address__" = string.format("%s:%s", constants.hostname, "9835"), "job" = "gpu_exporter"},
+	]
+	forward_to = [prometheus.remote_write.prom_remote.receiver]
+}
+{% endif %}
+
+{% if ansible_virtualization_role != "guest" and smartctl_output.stdout_lines | length != 0 %}
+prometheus.scrape "smartctl_exporter" {
+	targets = [
+		{"__address__" = string.format("%s:%s", constants.hostname, "9633"), "job" = "smartctl_exporter"},
+	]
+	forward_to = [prometheus.remote_write.prom_remote.receiver]
+}
+{% endif %}
 
 // Prometheus Remote Write
 prometheus.remote_write "prom_remote" {

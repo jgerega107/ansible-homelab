@@ -1,0 +1,50 @@
+- name: Create Alloy directory
+  ansible.builtin.file:
+    name: "/etc/alloy"
+    mode: "0755"
+    owner: root
+    group: root
+    state: directory
+
+- name: Get a list of existing *.alloy files in /etc/alloy
+  ansible.builtin.find:
+    paths: /etc/alloy
+    patterns: "*.alloy"
+    file_type: file
+  register: alloy_existing_configs
+
+- name: Create a list of required destination files from alloy_templates
+  ansible.builtin.set_fact:
+    alloy_required_configs: "{{ alloy_templates | map(attribute='dest') | list }}"
+
+- name: Identify files for deletion
+  ansible.builtin.set_fact:
+    alloy_files_to_delete: "{{ alloy_existing_configs.files | map(attribute='path') | list | difference(alloy_required_configs) }}"
+
+- name: Delete any *.alloy files that are not in the required list
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ alloy_files_to_delete }}"
+  when: alloy_files_to_delete | length > 0
+
+- name: Template all Alloy configs
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "0644"
+    owner: root
+    group: root
+  notify: restart alloy
+  loop: "{{ alloy_templates }}"
+
+- name: Run Alloy role
+  ansible.builtin.import_role:
+    name: grafana.grafana.alloy
+  vars:
+    alloy_env_file_vars:
+      CUSTOM_ARGS: "--server.http.listen-addr=0.0.0.0:12345"
+      CONFIG_FILE: "/etc/alloy/"
+    alloy_systemd_override: |
+      [Service]
+      User=root

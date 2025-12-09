@@ -1,0 +1,10 @@
+# Default set of templates to configure for Alloy, good for 99 percent of systems.
+alloy_templates:
+  - { src: 'templates/config.alloy.discovery.j2', dest: '/etc/alloy/discovery.alloy' }
+  - { src: 'templates/config.alloy.prometheus.j2', dest: '/etc/alloy/prometheus.alloy' }
+  - { src: 'templates/config.alloy.loki.j2', dest: '/etc/alloy/loki.alloy' }
+
+# Default remote endpoints for Alloy to send data to Eggcarrier monitoring stack.
+alloy_remote_write_endpoint: https://prometheus.eggcarrier.com/api/v1/write
+alloy_remote_log_endpoint: https://loki.eggcarrier.com/loki/api/v1/push
+alloy_remote_trace_endpoint: http://monitor.eggcarrier.com:4317

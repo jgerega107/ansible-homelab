@@ -27,7 +27,6 @@
   notify: Reboot system
 
 - name: Configure NVIDIA Docker Container Toolkit
-  when: nvidia_docker_enabled | default(false) | bool
   block:
     - name: Add NVIDIA CTK repo
       ansible.builtin.deb822_repository:

@@ -1,7 +1,11 @@
-- name: Configure observability
+- name: Configure exporters
   hosts: all
   become: true
   pre_tasks:
+    - name: Ensure smartmontools is installed
+      ansible.builtin.package:
+        name: smartmontools
+        state: present
     - name: Scan for SMART-capable drives
       ansible.builtin.command: smartctl --scan
       register: smartctl_output
@@ -14,79 +18,9 @@
         - smartctl_output.stdout_lines | length != 0
     - role: prometheus.prometheus.nvidia_gpu_exporter
       when: inventory_hostname in groups['nvidia']
-  tasks:
-    - name: Validate alloy_remote_write_endpoint is defined
-      ansible.builtin.assert:
-        that:
-          - alloy_remote_write_endpoint is defined
-          - alloy_remote_write_endpoint | length > 0
-        fail_msg: "alloy_remote_write_endpoint must be defined and not empty"
-        success_msg: "alloy_remote_write_endpoint is defined: {{ alloy_remote_write_endpoint }}"
 
-    - name: Validate alloy_remote_log_endpoint is defined
-      ansible.builtin.assert:
-        that:
-          - alloy_remote_log_endpoint is defined
-          - alloy_remote_log_endpoint | length > 0
-        fail_msg: "alloy_remote_log_endpoint must be defined and not empty"
-        success_msg: "alloy_remote_log_endpoint is defined: {{ alloy_remote_log_endpoint }}"
-
-    - name: Create Alloy directory
-      ansible.builtin.file:
-        name: "/etc/alloy"
-        mode: "0755"
-        owner: root
-        group: root
-        state: directory
-
-    - name: Template Alloy configs
-      ansible.builtin.template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        mode: "0644"
-        owner: root
-        group: root
-      notify: restart alloy
-      loop: "{{ alloy_configs }}"
-      vars:
-        alloy_configs:
-          - { src: 'templates/config.alloy.discovery.j2', dest: '/etc/alloy/discovery.alloy' }
-          - { src: 'templates/config.alloy.prometheus.j2', dest: '/etc/alloy/prometheus.alloy' }
-          - { src: 'templates/config.alloy.loki.j2', dest: '/etc/alloy/loki.alloy' }
-
-    - name: Template Alloy Nvidia scrape configs
-      ansible.builtin.template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        mode: "0644"
-        owner: root
-        group: root
-      notify: restart alloy
-      loop:
-        - { src: 'templates/config.alloy.nvidia.j2', dest: '/etc/alloy/nvidia.alloy' }
-      when: inventory_hostname in groups['nvidia']
-
-    - name: Template Alloy SMART configs
-      ansible.builtin.template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        mode: "0644"
-        owner: root
-        group: root
-      notify: restart alloy
-      loop:
-        - { src: 'templates/config.alloy.smartctl.j2', dest: '/etc/alloy/smartctl.alloy' }
-      when:
-        - ansible_virtualization_role != "guest"
-        - smartctl_output.stdout_lines | length != 0
-
-    - name: Run Alloy role
-      ansible.builtin.import_role:
-        name: grafana.grafana.alloy
-      vars:
-        alloy_env_file_vars:
-          CUSTOM_ARGS: "--server.http.listen-addr=0.0.0.0:12345"
-          CONFIG_FILE: "/etc/alloy/"
-        alloy_systemd_override: |
-          [Service]
-          User=root
+- name: Configure Alloy
+  hosts: all
+  become: true
+  roles:
+    - role: alloy

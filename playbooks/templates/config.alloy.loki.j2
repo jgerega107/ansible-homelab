@@ -1,3 +1,17 @@
+// Loki log discovery relabeling
+discovery.relabel "docker_log_relabel" {
+	targets = discovery.docker.linux.targets
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container_name"
+	}
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		target_label  = "project_name"
+	}
+}
+
 // Loki Log Collection
 loki.source.docker "docker_log_scrape" {
 	host          = "unix:///var/run/docker.sock"

@@ -1,6 +1,0 @@
-prometheus.scrape "gpu_exporter" {
-	targets = [
-		{"__address__" = string.format("%s:%s", constants.hostname, "9835"), "job" = "gpu_exporter"},
-	]
-	forward_to = [prometheus.remote_write.prom_remote.receiver]
-}
