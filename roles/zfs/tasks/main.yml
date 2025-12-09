@@ -13,10 +13,8 @@
     group: root
     owner: root
     mode: "0644"
-  notify: Reboot system
 
 - name: Enable ZFS key load service
   ansible.builtin.service:
     name: zfs-load-key
     enabled: true
-  notify: Reboot system
