@@ -3,11 +3,12 @@
   ansible.builtin.apt:
     name: cockpit
     state: present
-    default_release: "{{ ansible_distribution_release }}-backports"
+    default_release: "{{ ansible_facts['distribution_release'] }}-backports"
+    update_cache: true
 
 - name: Install Cockpit Machines from backports
   ansible.builtin.apt:
     name: cockpit-machines
     state: present
-    default_release: "{{ ansible_distribution_release }}-backports"
+    default_release: "{{ ansible_facts['distribution_release'] }}-backports"
   when: cockpit_hypervisor_enabled | default(false) | bool

@@ -5,16 +5,9 @@
     state: present
     update_cache: true
 
-- name: Enable contrib repository
-  ansible.builtin.apt_repository:
-    repo: deb http://deb.debian.org/debian {{ ansible_distribution_release }} contrib
-    state: present
-    update_cache: false
-
-# Doesn't support debian13 for some reason?
 - name: Install CUDA keyring package
   ansible.builtin.apt:
-    deb: https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/cuda-keyring_1.1-1_all.deb
+    deb: https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/cuda-keyring_1.1-1_all.deb
     state: present
 
 - name: Install NVIDIA driver with open kernel modules

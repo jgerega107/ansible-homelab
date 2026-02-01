@@ -3,4 +3,4 @@ __nvidia_arch_map:
   x86_64: 'amd64'
   aarch64: 'arm64'
 
-__nvidia_arch: "{{ __nvidia_arch_map[ansible_architecture] | default(ansible_architecture) }}"
+__nvidia_arch: "{{ __nvidia_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"

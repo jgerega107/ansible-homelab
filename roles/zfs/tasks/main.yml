@@ -3,7 +3,7 @@
   ansible.builtin.apt:
     name: zfsutils-linux
     state: present
-    default_release: "{{ ansible_distribution_release }}-backports"
+    default_release: "{{ ansible_facts['distribution_release'] }}-backports"
   notify: Reboot system
 
 - name: Copy over ZFS key load service

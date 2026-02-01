@@ -101,7 +101,7 @@ prometheus.scrape "gpu_exporter" {
 }
 {% endif %}
 
-{% if ansible_virtualization_role != "guest" and smartctl_output.stdout_lines | length != 0 %}
+{% if ansible_facts['virtualization_role'] != "guest" and smartctl_output.stdout_lines | length != 0 %}
 prometheus.scrape "smartctl_exporter" {
 	targets = [
 		{"__address__" = string.format("%s:%s", constants.hostname, "9633"), "job" = "smartctl_exporter"},
@@ -115,10 +115,10 @@ prometheus.remote_write "prom_remote" {
 	endpoint {
 		url = "{{ alloy_remote_write_endpoint }}"
 		send_native_histograms = true
-{% if groups.remote is defined and inventory_hostname in groups.remote %}
+{% if alloy_prom_basic_auth_username is defined %}
 		basic_auth {
-			username = "{{ alloy_basic_auth_username }}"
-			password = "{{ alloy_basic_auth_password }}"
+			username = "{{ alloy_prom_basic_auth_username }}"
+			password = "{{ alloy_prom_basic_auth_password }}"
 		}
 {% endif %}
 	}

@@ -38,10 +38,10 @@ loki.relabel "log_relabel" {
 loki.write "loki_remote" {
 	endpoint {
 		url = "{{ alloy_remote_log_endpoint }}"
-{% if groups.remote is defined and inventory_hostname in groups.remote %}
+{% if alloy_loki_basic_auth_username is defined %}
 		basic_auth {
-			username = "{{ alloy_basic_auth_username }}"
-			password = "{{ alloy_basic_auth_password }}"
+			username = "{{ alloy_loki_basic_auth_username }}"
+			password = "{{ alloy_loki_basic_auth_password }}"
 		}
 {% endif %}
 	}
