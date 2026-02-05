@@ -12,6 +12,7 @@
       changed_when: false
   roles:
     - role: prometheus.prometheus.node_exporter
+    - role: prometheus.prometheus.cadvisor
     - role: prometheus.prometheus.smartctl_exporter
       when:
         - ansible_facts['virtualization_role'] != "guest"

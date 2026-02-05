@@ -80,15 +80,17 @@ prometheus.scrape "docker_container_metrics_host" {
 	forward_to = [prometheus.remote_write.prom_remote.receiver]
 }
 
-prometheus.exporter.cadvisor "docker" {
-	docker_host = "unix:///var/run/docker.sock"
-	docker_only = true
-}
-
 prometheus.scrape "base_exporters" {
 	targets = array.concat([
 		{"__address__" = string.format("%s:%s", constants.hostname, "9100"), "job" = "node_exporter"},
-	], prometheus.exporter.cadvisor.docker.targets, prometheus.exporter.self.alloy_exporter.targets)
+	], prometheus.exporter.self.alloy_exporter.targets)
+	forward_to = [prometheus.remote_write.prom_remote.receiver]
+}
+
+prometheus.scrape "cadvisor_exporter" {
+	targets = [
+		{"__address__" = string.format("%s:%s", constants.hostname, "6942"), "job" = "cadvisor_exporter"},
+	]
 	forward_to = [prometheus.remote_write.prom_remote.receiver]
 }
 
