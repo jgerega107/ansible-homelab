@@ -12,6 +12,8 @@ FAILED=0
 DRY_RUN=0
 BACKUP_TARGET="local"
 
+set -eo pipefail
+
 usage() {
     echo "Usage: $0 [OPTIONS]"
     echo "Options:"
@@ -33,8 +35,9 @@ EOF
 }
 
 cleanup() {
+    local exit_code=$?
     if [[ $DRY_RUN -eq 0 ]]; then
-        if [[ $FAILED -eq 1 ]]; then
+        if [[ $exit_code -ne 0 ]]; then
             write_prometheus_metric 0
         else
             write_prometheus_metric 1
