@@ -5,22 +5,69 @@
     state: started
     enabled: true
 
-- name: Configure sshd
-  ansible.builtin.lineinfile:
-    path: "/etc/ssh/sshd_config"
-    regex: "^(#)?{{ item.key }}"
-    line: "{{ item.key }} {{ item.value }}"
-    state: present
-  loop:
-    - { key: "PermitRootLogin", value: "no" }
-    - { key: "PasswordAuthentication", value: "no" }
-    - { key: "PubkeyAuthentication", value: "yes" }
+- name: Ensure sshd_config.d exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    mode: "0755"
+
+- name: Find existing sshd_config.d files
+  ansible.builtin.find:
+    paths: /etc/ssh/sshd_config.d
+    file_type: file
+  register: base_sshd_config_files
+
+- name: Remove unmanaged sshd_config.d files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ base_sshd_config_files.files }}"
+  when: item.path | basename != 'hardening.conf'
   notify:
     - Restart sshd
 
-- name: Remove sshd_config.d directory
-  ansible.builtin.file:
-    path: /etc/ssh/sshd_config.d
-    state: absent
+- name: Configure sshd hardening
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+    mode: "0644"
   notify:
     - Restart sshd
+
+- name: Flush handlers to restart sshd if needed
+  ansible.builtin.meta: flush_handlers
+
+- name: Verify sshd configuration is valid
+  ansible.builtin.command:
+    cmd: sshd -t
+  changed_when: false
+
+- name: Get effective sshd configuration
+  ansible.builtin.command:
+    cmd: sshd -T
+  register: base_sshd_config
+  changed_when: false
+
+- name: Verify PermitRootLogin is disabled
+  ansible.builtin.assert:
+    that:
+      - "'permitrootlogin no' in base_sshd_config.stdout | lower"
+    fail_msg: "PermitRootLogin is not disabled"
+    success_msg: "PermitRootLogin is disabled"
+
+- name: Verify PasswordAuthentication is disabled
+  ansible.builtin.assert:
+    that:
+      - "'passwordauthentication no' in base_sshd_config.stdout | lower"
+    fail_msg: "PasswordAuthentication is not disabled"
+    success_msg: "PasswordAuthentication is disabled"
+
+- name: Verify PubkeyAuthentication is enabled
+  ansible.builtin.assert:
+    that:
+      - "'pubkeyauthentication yes' in base_sshd_config.stdout | lower"
+    fail_msg: "PubkeyAuthentication is not enabled"
+    success_msg: "PubkeyAuthentication is enabled"
