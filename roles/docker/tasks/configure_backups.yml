@@ -1,4 +1,48 @@
 ---
+- name: Ensure rclone is installed
+  ansible.builtin.package:
+    name: rclone
+    state: present
+
+- name: Ensure rclone config directory exists
+  ansible.builtin.file:
+    path: /root/.config/rclone
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+
+- name: Ensure rclone SSH key directory exists
+  ansible.builtin.file:
+    path: /root/.ssh/rclone
+    state: directory
+    mode: "0700"
+    owner: root
+    group: root
+
+- name: Generate SSH key for rclone
+  community.crypto.openssh_keypair:
+    path: /root/.ssh/rclone/id_ed25519
+    type: ed25519
+    size: 256
+    owner: root
+    group: root
+    mode: "0600"
+  register: docker_rclone_ssh_key
+
+- name: Display rclone public key for remote server
+  ansible.builtin.debug:
+    msg: "Add this public key to the remote SFTP server: {{ docker_rclone_ssh_key.public_key }}"
+
+- name: Configure rclone SFTP remote
+  ansible.builtin.template:
+    src: rclone.conf.j2
+    dest: /root/.config/rclone/rclone.conf
+    mode: "0600"
+    owner: root
+    group: root
+  no_log: true
+
 - name: Ensure Prometheus textfile directory exists
   ansible.builtin.file:
     path: /var/lib/node_exporter

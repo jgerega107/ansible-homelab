@@ -5,7 +5,7 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/backup_docker_volumes --backup-target local
+ExecStart=/usr/local/sbin/backup_docker_volumes --backup-target remote
 User=root
 WorkingDirectory=/srv/docker
 

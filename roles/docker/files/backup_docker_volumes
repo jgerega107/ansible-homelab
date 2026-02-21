@@ -2,7 +2,7 @@
 
 BACKUP_DIR="/srv/docker/backups/$(hostname)"
 RCLONE_REMOTE="remote:"
-RCLONE_PATH="backups/$(hostname)"
+RCLONE_PATH="/backups/$(hostname)"
 DATA_PREFIX="/srv/docker/data/"
 LABEL_STOP="backup.stop"
 PROMETHEUS_TEXTFILE_DIR="/var/lib/node_exporter"
@@ -86,13 +86,14 @@ validate_rclone() {
         exit 1
     fi
 
-    if ! rclone lsf "$RCLONE_REMOTE" &> /dev/null; then
-        echo "ERROR: rclone remote '$RCLONE_REMOTE' is not accessible" >&2
+    if ! rclone lsf "${RCLONE_REMOTE}${RCLONE_PATH}" &> /dev/null; then
+        echo "ERROR: rclone remote '${RCLONE_REMOTE}${RCLONE_PATH}' is not accessible" >&2
         exit 1
     fi
 }
 
 if [[ "$BACKUP_TARGET" == "remote" ]]; then
+    rclone mkdir "${RCLONE_REMOTE}${RCLONE_PATH}"
     validate_rclone
 fi
 
