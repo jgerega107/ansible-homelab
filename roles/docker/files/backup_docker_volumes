@@ -1,0 +1,166 @@
+#!/bin/bash
+
+BACKUP_DIR="/srv/docker/backups/$(hostname)"
+RCLONE_REMOTE="remote:"
+RCLONE_PATH="backups/$(hostname)"
+DATA_PREFIX="/srv/docker/data/"
+LABEL_STOP="backup.stop"
+PROMETHEUS_TEXTFILE_DIR="/var/lib/node_exporter"
+DATE=$(date +%Y-%m-%d_%H-%M-%S)
+
+FAILED=0
+DRY_RUN=0
+BACKUP_TARGET="local"
+
+usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  --backup-target <local|remote>  Backup target (default: local)"
+    echo "  --dry-run                       Show what would be done without executing"
+    exit 1
+}
+
+write_prometheus_metric() {
+    local success=$1
+    local temp_file="${PROMETHEUS_TEXTFILE_DIR}/docker_backup.prom.tmp"
+    local final_file="${PROMETHEUS_TEXTFILE_DIR}/docker_backup.prom"
+
+    cat > "$temp_file" << EOF
+docker_backup_success{target="${BACKUP_TARGET}"} ${success}
+docker_backup_timestamp{target="${BACKUP_TARGET}"} $(date +%s)
+EOF
+    mv "$temp_file" "$final_file"
+}
+
+cleanup() {
+    if [[ $DRY_RUN -eq 0 ]]; then
+        if [[ $FAILED -eq 1 ]]; then
+            write_prometheus_metric 0
+        else
+            write_prometheus_metric 1
+        fi
+    fi
+}
+
+trap cleanup EXIT
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --backup-target)
+            shift
+            if [[ -z "$1" ]]; then
+                echo "ERROR: --backup-target requires an argument" >&2
+                usage
+            fi
+            if [[ "$1" != "local" && "$1" != "remote" ]]; then
+                echo "ERROR: --backup-target must be 'local' or 'remote'" >&2
+                usage
+            fi
+            BACKUP_TARGET="$1"
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=1
+            echo "Dry run mode enabled. No actions will be performed."
+            shift
+            ;;
+        *)
+            echo "ERROR: Unknown option: $1" >&2
+            usage
+            ;;
+    esac
+done
+
+if [[ "$BACKUP_TARGET" == "local" ]]; then
+    mkdir -p "$BACKUP_DIR"
+fi
+
+validate_rclone() {
+    if ! command -v rclone &> /dev/null; then
+        echo "ERROR: rclone binary not found" >&2
+        exit 1
+    fi
+
+    if ! rclone config show &> /dev/null; then
+        echo "ERROR: rclone configuration not found or invalid" >&2
+        exit 1
+    fi
+
+    if ! rclone lsf "$RCLONE_REMOTE" &> /dev/null; then
+        echo "ERROR: rclone remote '$RCLONE_REMOTE' is not accessible" >&2
+        exit 1
+    fi
+}
+
+if [[ "$BACKUP_TARGET" == "remote" ]]; then
+    validate_rclone
+fi
+
+while IFS=$'\t' read -r container_id container_name; do
+    mounts=$(docker inspect --format='{{range .Mounts}}{{.Source}} {{end}}' "$container_id")
+
+    data_mounts=()
+    for mount in $mounts; do
+        if [[ "$mount" == $DATA_PREFIX* ]]; then
+            data_mounts+=("$mount")
+        fi
+    done
+
+    if [[ ${#data_mounts[@]} -eq 0 ]]; then
+        continue
+    fi
+
+    stop_required=$(docker inspect --format="{{ index .Config.Labels \"$LABEL_STOP\" }}" "$container_id")
+    stopped=0
+
+    if [[ "$stop_required" == "true" ]]; then
+        echo "Stopping container $container_name for backup..."
+        if [[ $DRY_RUN -eq 1 ]]; then
+            echo "[DRY RUN] Would stop container $container_id"
+        else
+            docker stop "$container_id"
+            stopped=1
+        fi
+    fi
+
+    archive_name="${container_name}_${DATE}.tar.gz"
+
+    if [[ "$BACKUP_TARGET" == "local" ]]; then
+        echo "Backing up ${data_mounts[*]} to $BACKUP_DIR/$archive_name"
+        if [[ $DRY_RUN -eq 1 ]]; then
+            echo "[DRY RUN] Would run: tar -czf $BACKUP_DIR/$archive_name -P ${data_mounts[*]}"
+        else
+            if ! tar -czf "$BACKUP_DIR/$archive_name" -P "${data_mounts[@]}"; then
+                echo "ERROR: Failed to back up ${data_mounts[*]}" >&2
+                FAILED=1
+            fi
+        fi
+    else
+        remote_path="${RCLONE_REMOTE}${RCLONE_PATH}/${archive_name}"
+        echo "Backing up ${data_mounts[*]} to $remote_path"
+        if [[ $DRY_RUN -eq 1 ]]; then
+            echo "[DRY RUN] Would run: tar -czf - -P ${data_mounts[*]} | rclone rcat $remote_path"
+        else
+            if ! tar -czf - -P "${data_mounts[@]}" | rclone rcat "$remote_path"; then
+                echo "ERROR: Failed to back up ${data_mounts[*]}" >&2
+                FAILED=1
+            fi
+        fi
+    fi
+
+    if [[ $stopped -eq 1 ]]; then
+        echo "Starting container $container_name after backup..."
+        if [[ $DRY_RUN -eq 1 ]]; then
+            echo "[DRY RUN] Would start container $container_id"
+        else
+            docker start "$container_id"
+        fi
+    fi
+done < <(docker ps --format '{{.ID}}\t{{.Names}}')
+
+if [[ $FAILED -eq 1 ]]; then
+    echo "Backup completed with errors." >&2
+    exit 1
+fi
+
+echo "Backup complete."

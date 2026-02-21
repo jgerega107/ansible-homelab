@@ -1,0 +1,13 @@
+[Unit]
+Description=Docker Volume Backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/backup_docker_volumes --backup-target local
+User=root
+WorkingDirectory=/srv/docker
+
+[Install]
+WantedBy=multi-user.target
