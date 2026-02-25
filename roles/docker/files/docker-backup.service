@@ -5,7 +5,8 @@ Requires=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/backup_docker_volumes --backup-target remote
+EnvironmentFile=/etc/restic/backup.env
+ExecStart=/usr/local/sbin/backup_docker_volumes
 User=root
 WorkingDirectory=/srv/docker
 

@@ -1,25 +1,55 @@
 #!/bin/bash
 
-BACKUP_DIR="/srv/docker/backups/$(hostname)"
-RCLONE_REMOTE="remote:"
-RCLONE_PATH="/backups/$(hostname)"
-DATA_PREFIX="/srv/docker/data/"
+# Docker Backup Script using Restic over SFTP
+# Backs up the entire /srv/docker directory in a single snapshot
+
+# Configuration
+DATA_DIR="/srv/docker"
 LABEL_STOP="backup.stop"
 PROMETHEUS_TEXTFILE_DIR="/var/lib/node_exporter"
-DATE=$(date +%Y-%m-%d_%H-%M-%S)
 
+# Script state
 FAILED=0
 DRY_RUN=0
-BACKUP_TARGET="local"
+STOPPED_CONTAINERS=()
 
 set -eo pipefail
 
 usage() {
-    echo "Usage: $0 [OPTIONS]"
-    echo "Options:"
-    echo "  --backup-target <local|remote>  Backup target (default: local)"
-    echo "  --dry-run                       Show what would be done without executing"
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  --dry-run              Show what would be done without executing
+  -h, --help             Show this help message
+
+Environment Variables:
+  RESTIC_REPOSITORY      Restic repository location (can be restic repository format for SFTP,etc)
+  RESTIC_PASSWORD        Restic password (or use RESTIC_PASSWORD_FILE)
+  RESTIC_PASSWORD_FILE   Path to file containing restic password
+
+Examples:
+  $0                                          # Run backup
+  $0 --dry-run                                # Show what would be done
+
+Backup Structure:
+  - Single snapshot of entire /srv/docker directory
+  - Containers with backup.stop=true label are stopped during backup
+
+EOF
     exit 1
+}
+
+log_info() {
+    echo "[INFO] $1"
+}
+
+log_warn() {
+    echo "[WARN] $1" >&2
+}
+
+log_error() {
+    echo "[ERROR] $1" >&2
 }
 
 write_prometheus_metric() {
@@ -27,17 +57,38 @@ write_prometheus_metric() {
     local temp_file="${PROMETHEUS_TEXTFILE_DIR}/docker_backup.prom.tmp"
     local final_file="${PROMETHEUS_TEXTFILE_DIR}/docker_backup.prom"
 
+    if [[ $DRY_RUN -eq 1 ]]; then
+        return
+    fi
+
     cat > "$temp_file" << EOF
-docker_backup_success{target="${BACKUP_TARGET}"} ${success}
-docker_backup_timestamp{target="${BACKUP_TARGET}"} $(date +%s)
+docker_backup_success ${success}
+docker_backup_timestamp $(date +%s)
 EOF
     mv "$temp_file" "$final_file"
 }
 
 cleanup() {
     local exit_code=$?
+
+    # Always restart containers that were stopped, even on failure
+    if [[ ${#STOPPED_CONTAINERS[@]} -gt 0 ]]; then
+        log_info "Restarting stopped containers..."
+        for container_info in "${STOPPED_CONTAINERS[@]}"; do
+            local container_id="${container_info%%:*}"
+            local container_name="${container_info##*:}"
+
+            if [[ $DRY_RUN -eq 0 ]]; then
+                log_info "Starting container: $container_name"
+                docker start "$container_id" || log_warn "Failed to restart container $container_name"
+            else
+                log_info "[DRY RUN] Would start container: $container_name"
+            fi
+        done
+    fi
+
     if [[ $DRY_RUN -eq 0 ]]; then
-        if [[ $exit_code -ne 0 ]]; then
+        if [[ $exit_code -ne 0 || $FAILED -ne 0 ]]; then
             write_prometheus_metric 0
         else
             write_prometheus_metric 1
@@ -47,124 +98,156 @@ cleanup() {
 
 trap cleanup EXIT
 
+# Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --backup-target)
-            shift
-            if [[ -z "$1" ]]; then
-                echo "ERROR: --backup-target requires an argument" >&2
-                usage
-            fi
-            if [[ "$1" != "local" && "$1" != "remote" ]]; then
-                echo "ERROR: --backup-target must be 'local' or 'remote'" >&2
-                usage
-            fi
-            BACKUP_TARGET="$1"
-            shift
-            ;;
         --dry-run)
             DRY_RUN=1
-            echo "Dry run mode enabled. No actions will be performed."
+            log_info "Dry run mode enabled. No actions will be performed."
             shift
             ;;
+        -h|--help)
+            usage
+            ;;
         *)
-            echo "ERROR: Unknown option: $1" >&2
+            log_error "Unknown option: $1"
             usage
             ;;
     esac
 done
 
-if [[ "$BACKUP_TARGET" == "local" ]]; then
-    mkdir -p "$BACKUP_DIR"
+# Validate restic is installed
+if ! command -v restic &> /dev/null; then
+    log_error "restic binary not found. Please install restic."
+    exit 1
 fi
 
-validate_rclone() {
-    if ! command -v rclone &> /dev/null; then
-        echo "ERROR: rclone binary not found" >&2
-        exit 1
-    fi
+# Validate directories exist
+if [[ ! -d "$DATA_DIR" ]]; then
+    log_error "Backup directory does not exist: $DATA_DIR"
+    exit 1
+fi
 
-    if ! rclone config show &> /dev/null; then
-        echo "ERROR: rclone configuration not found or invalid" >&2
-        exit 1
-    fi
+if [[ ! -d "$PROMETHEUS_TEXTFILE_DIR" ]]; then
+    log_error "Prometheus textfile directory does not exist: $PROMETHEUS_TEXTFILE_DIR"
+    exit 1
+fi
 
-    if ! rclone lsf "${RCLONE_REMOTE}${RCLONE_PATH}" &> /dev/null; then
-        echo "ERROR: rclone remote '${RCLONE_REMOTE}${RCLONE_PATH}' is not accessible" >&2
+if [[ ! -w "$PROMETHEUS_TEXTFILE_DIR" ]]; then
+    log_error "Prometheus textfile directory is not writable: $PROMETHEUS_TEXTFILE_DIR"
+    exit 1
+fi
+
+# Set up restic environment
+export RESTIC_REPOSITORY
+
+if [[ -n "$RESTIC_PASSWORD" ]]; then
+    export RESTIC_PASSWORD
+    log_info "Using RESTIC_PASSWORD from environment"
+elif [[ -n "$RESTIC_PASSWORD_FILE" && -f "$RESTIC_PASSWORD_FILE" ]]; then
+    export RESTIC_PASSWORD_FILE
+    log_info "Using RESTIC_PASSWORD_FILE: $RESTIC_PASSWORD_FILE"
+else
+    log_error "No restic password provided. Set RESTIC_PASSWORD or RESTIC_PASSWORD_FILE environment variable."
+    exit 1
+fi
+
+# Initialize restic repo if needed
+init_restic_repo() {
+    log_info "Checking restic repository..."
+
+    if ! restic cat config > /dev/null 2>&1; then
+        log_error "Restic repository not found or not accessible: $RESTIC_REPOSITORY"
+        log_error "Please initialize the repository manually with: restic init"
         exit 1
     fi
 }
 
-if [[ "$BACKUP_TARGET" == "remote" ]]; then
-    rclone mkdir "${RCLONE_REMOTE}${RCLONE_PATH}"
-    validate_rclone
-fi
-
-while IFS=$'\t' read -r container_id container_name; do
-    mounts=$(docker inspect --format='{{range .Mounts}}{{.Source}} {{end}}' "$container_id")
-
-    data_mounts=()
-    for mount in $mounts; do
-        if [[ "$mount" == $DATA_PREFIX* ]]; then
-            data_mounts+=("$mount")
+# Get all running containers with the backup.stop label
+get_containers_to_stop() {
+    docker ps --format '{{.ID}}\t{{.Names}}' | while IFS=$'\t' read -r container_id container_name; do
+        local label_value
+        label_value=$(docker inspect --format="{{ index .Config.Labels \"$LABEL_STOP\" }}" "$container_id" 2>/dev/null)
+        if [[ "$label_value" == "true" ]]; then
+            echo "${container_id}:${container_name}"
         fi
     done
+}
 
-    if [[ ${#data_mounts[@]} -eq 0 ]]; then
-        continue
+# Main backup logic
+main() {
+    log_info "Starting Docker backup using restic"
+    log_info "Repository: $RESTIC_REPOSITORY"
+    log_info "Backup directory: $DATA_DIR"
+
+    if [[ $DRY_RUN -eq 1 ]]; then
+        log_info "=== DRY RUN MODE - No actions will be performed ==="
     fi
 
-    stop_required=$(docker inspect --format="{{ index .Config.Labels \"$LABEL_STOP\" }}" "$container_id")
-    stopped=0
-
-    if [[ "$stop_required" == "true" ]]; then
-        echo "Stopping container $container_name for backup..."
-        if [[ $DRY_RUN -eq 1 ]]; then
-            echo "[DRY RUN] Would stop container $container_id"
-        else
-            docker stop "$container_id"
-            stopped=1
-        fi
-    fi
-
-    archive_name="${container_name}_${DATE}.tar.gz"
-
-    if [[ "$BACKUP_TARGET" == "local" ]]; then
-        echo "Backing up ${data_mounts[*]} to $BACKUP_DIR/$archive_name"
-        if [[ $DRY_RUN -eq 1 ]]; then
-            echo "[DRY RUN] Would run: tar -czf $BACKUP_DIR/$archive_name -P ${data_mounts[*]}"
-        else
-            if ! tar -czf "$BACKUP_DIR/$archive_name" -P "${data_mounts[@]}"; then
-                echo "ERROR: Failed to back up ${data_mounts[*]}" >&2
-                FAILED=1
-            fi
-        fi
+    # Initialize/check repository (skip during dry run)
+    if [[ $DRY_RUN -eq 0 ]]; then
+        init_restic_repo
     else
-        remote_path="${RCLONE_REMOTE}${RCLONE_PATH}/${archive_name}"
-        echo "Backing up ${data_mounts[*]} to $remote_path"
-        if [[ $DRY_RUN -eq 1 ]]; then
-            echo "[DRY RUN] Would run: tar -czf - -P ${data_mounts[*]} | rclone rcat $remote_path"
-        else
-            if ! tar -czf - -P "${data_mounts[@]}" | rclone rcat "$remote_path"; then
-                echo "ERROR: Failed to back up ${data_mounts[*]}" >&2
-                FAILED=1
+        log_info "[DRY RUN] Would check/initialize restic repository"
+    fi
+
+    # Find containers that need to be stopped
+    log_info "Checking for containers with backup.stop label..."
+    local containers_to_stop
+    containers_to_stop=$(get_containers_to_stop)
+
+    if [[ -n "$containers_to_stop" ]]; then
+        while IFS= read -r container_info; do
+            [[ -z "$container_info" ]] && continue
+            local container_id="${container_info%%:*}"
+            local container_name="${container_info##*:}"
+
+            if [[ $DRY_RUN -eq 0 ]]; then
+                log_info "Stopping container: $container_name"
+                if docker stop "$container_id"; then
+                    STOPPED_CONTAINERS+=("$container_info")
+                else
+                    log_error "Failed to stop container $container_name"
+                    FAILED=1
+                fi
+            else
+                log_info "[DRY RUN] Would stop container: $container_name"
             fi
-        fi
+        done <<< "$containers_to_stop"
+
+        log_info "Stopped ${#STOPPED_CONTAINERS[@]} container(s) for backup"
+    else
+        log_info "No containers with backup.stop label found"
     fi
 
-    if [[ $stopped -eq 1 ]]; then
-        echo "Starting container $container_name after backup..."
-        if [[ $DRY_RUN -eq 1 ]]; then
-            echo "[DRY RUN] Would start container $container_id"
+    # Take single restic snapshot of entire /srv/docker
+    if [[ $DRY_RUN -eq 1 ]]; then
+        log_info "[DRY RUN] Would run: restic backup --tag docker $DATA_DIR"
+    else
+        log_info "Taking restic snapshot of $DATA_DIR..."
+        if restic backup --tag "docker" "$DATA_DIR"; then
+            log_info "Backup completed successfully"
         else
-            docker start "$container_id"
+            log_error "Backup failed"
+            FAILED=1
         fi
     fi
-done < <(docker ps --format '{{.ID}}\t{{.Names}}')
 
-if [[ $FAILED -eq 1 ]]; then
-    echo "Backup completed with errors." >&2
-    exit 1
-fi
+    # Prune old snapshots (keep last 7 daily, 4 weekly, 12 monthly)
+    if [[ $DRY_RUN -eq 0 && $FAILED -eq 0 ]]; then
+        log_info "Pruning old snapshots..."
+        restic forget --keep-daily 7 --keep-weekly 4 --prune || log_warn "Pruning failed, but backup succeeded"
+    elif [[ $DRY_RUN -eq 1 ]]; then
+        log_info "[DRY RUN] Would prune old snapshots"
+    fi
 
-echo "Backup complete."
+    if [[ $FAILED -ne 0 ]]; then
+        log_error "Backup completed with errors"
+        exit 1
+    fi
+
+    log_info "Backup complete"
+    exit 0
+}
+
+main "$@"
