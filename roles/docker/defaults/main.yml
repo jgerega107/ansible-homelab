@@ -4,13 +4,7 @@ docker_base_dir: "/srv/docker"
 docker_compose_dir: "/srv/docker/compose"
 # Directory for volume data
 docker_data_dir: "/srv/docker/data"
-# Directory for volume backups
-docker_backup_dir: "/srv/docker/backups"
-
-# Restic backup configuration
-docker_restic_repository: "sftp:backup@{{ docker_remote_backup_sftp_host }}:/backups/{{ inventory_hostname }}"
-docker_restic_password: "{{ vault_docker_restic_password | default(lookup('password', '/dev/null chars=ascii_letters,digits length=32')) }}"
-
-# SFTP backup configuration (should be defined in inventory/group_vars)
-docker_remote_backup_sftp_host: "backup-server.example.com"
-docker_backup_ssh_port: 5009
+# Whether or not to enable backups
+docker_configure_backups: false
+# Restic backup repository location
+docker_restic_repository: "/srv/docker/backups"
