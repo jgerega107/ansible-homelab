@@ -1,0 +1,4 @@
+// Base discovery config, required for loki/prometheus
+discovery.docker "linux" {
+	host = "unix:///var/run/docker.sock"
+}
