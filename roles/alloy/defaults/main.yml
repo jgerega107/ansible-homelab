@@ -5,6 +5,5 @@ alloy_templates:
   - { src: 'templates/config.alloy.loki.j2', dest: '/etc/alloy/loki.alloy' }
 
 # Default remote endpoints for Alloy to send data to Eggcarrier monitoring stack.
-alloy_remote_write_endpoint: https://prometheus.eggcarrier.com/api/v1/write
-alloy_remote_log_endpoint: https://loki.eggcarrier.com/loki/api/v1/push
-alloy_remote_trace_endpoint: http://monitor.eggcarrier.com:4317
+alloy_remote_write_endpoint: https://prometheus-monitoring.monitor.internal.eggcarrier.com/api/v1/write
+alloy_remote_log_endpoint: https://loki-monitoring.monitor.internal.eggcarrier.com/loki/api/v1/push

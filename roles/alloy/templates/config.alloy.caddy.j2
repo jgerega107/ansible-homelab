@@ -1,6 +1,6 @@
 local.file_match "logs" {
   path_targets = [
-    {__path__ = "/srv/docker/data/caddy/logs/*.log", "service" = "ingress"},
+    {__path__ = "/var/log/caddy/*.log", "service" = "ingress"},
   ]
 }
 
