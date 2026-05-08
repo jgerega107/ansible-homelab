@@ -18,7 +18,9 @@
         - ansible_facts['virtualization_role'] != "guest"
         - smartctl_output.stdout_lines | length != 0
     - role: prometheus.prometheus.nvidia_gpu_exporter
-      when: inventory_hostname in groups['nvidia']
+      when:
+        - groups.nvidia is defined
+        - inventory_hostname in groups['nvidia']
 
 - name: Configure Alloy
   hosts: all

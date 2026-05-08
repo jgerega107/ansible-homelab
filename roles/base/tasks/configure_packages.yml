@@ -1,14 +1,20 @@
 - name: Install base packages
   ansible.builtin.package:
-    name: "{{ base_packages }}"
-    state: present
+      name: "{{ base_packages }}"
+      state: present
 
 - name: Remove firewalld
   ansible.builtin.package:
-    name: firewalld
-    state: absent
+      name: firewalld
+      state: absent
 
 - name: Remove snapd
   ansible.builtin.package:
-    name: snapd
-    state: absent
+      name: snapd
+      state: absent
+
+- name: Install systemd-resolved
+  ansible.builtin.package:
+      name: systemd-resolved
+      state: present
+  notify: Reboot system

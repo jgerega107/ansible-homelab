@@ -1,54 +1,72 @@
 # Homelab Collection
 
-#### WORK IN PROGRESS!
-Ansible collection used to provisioning my homelab. Some roles I've created do the following:
-- Install drivers (Nvidia, ZFS) for Debian systems
-- Install/manage Docker on Debian systems
-- Install/configure stateless observability agents (Grafana Alloy)
-- Install/manage Samba
-- And more
+Work-in-progress Ansible collection for provisioning and managing a homelab.
 
-# This is only tested on Debian 13.
+This collection includes roles and playbooks to:
 
-## Potential future plans
-- Set up molecule (vagrant backend? need vagrant boxes representative of homelab OSes)
-- Configure NFS server/mounts for clients
+- Configure base users, packages, services, and SSH settings
+- Install and manage Docker on Debian/Ubuntu systems
+- Install NVIDIA and ZFS drivers
+- Configure observability agents and exporters, including Grafana Alloy
+- Configure Cockpit
+- Install and configure Samba on the storage host
+
+This collection is primarily tested on Debian 13.
+
+## Potential Future Plans
+
+- Set up Molecule testing
+- Configure an NFS server and client mounts
 - Configure RKE2
-- Manage Docker compose projects?
-- Manage prometheus config/rulesets?
-- Makefile for common operations
-- Limited windows support?
-- Low priority, but other OS support? RHEL
+- Manage Docker Compose projects
+- Manage Prometheus config and rules
+- Add a Makefile for common operations
+- Add limited Windows support
+- Add support for more Linux distributions
 
-## Usage
+## Inventory Expectations
 
-### NOTE: Inventory groups
+The playbooks expect certain hosts or groups to exist in your inventory:
 
-There are certain groups and vars that these playbooks may expect. Look at the `defaults` of each role to see the var formats it expects under your host/group vars.
+- `all`: Used by the base, Docker, observability, and Cockpit playbooks
+- `cockpit`: Hosts that should receive Cockpit when running the base playbook
+- `nvidia`: Hosts with an NVIDIA GPU
+- `master`: Host that receives ZFS and Samba storage configuration
 
-Some groups that the playbooks may expect
+Role variables are documented in each role's `defaults/main.yml` and role
+README.
 
-1. `nvidia`: Hosts that have a Nvidia GPU
-2. `zfs`: Hosts that need ZFS drivers
-3. `local`/`remote`: Hosts on local/remote networks (used for configuring Alloy push endpoints)
-4. `storage`: Hosts that need to host a Samba share
+## Install Requirements
 
-### 1. Install requirements
-```
+```bash
 # Create venv
 python3 -m venv .venv
 
 # Activate venv
-. .venv bin activate
+. .venv/bin/activate
 
-# Install python reqs (ansible)
-pip install -r requirements.txt
+# Install Python requirements, including Ansible
+pip install -r requirements.txt --upgrade
 
-# Install ansible reqs (collection)
+# Install Ansible collection requirements
 ansible-galaxy install -r requirements.yml
 ```
 
-### 2. Run playbook
+## Run Playbooks
+
+Run collection playbooks by their fully qualified collection name:
+
+```bash
+ansible-playbook -i yourinventoryhere.yml jgerega.homelab.base
+ansible-playbook -i yourinventoryhere.yml jgerega.homelab.docker
+ansible-playbook -i yourinventoryhere.yml jgerega.homelab.observability
+ansible-playbook -i yourinventoryhere.yml jgerega.homelab.zfs
+ansible-playbook -i yourinventoryhere.yml jgerega.homelab.nvidia
+ansible-playbook -i yourinventoryhere.yml jgerega.homelab.storage
 ```
-ansible-playbook jgerega.homelab.docker -i yourinventoryhere.yml
+
+You can limit runs to a specific host or group:
+
+```bash
+ansible-playbook -i yourinventoryhere.yml jgerega.homelab.docker --limit appserver
 ```

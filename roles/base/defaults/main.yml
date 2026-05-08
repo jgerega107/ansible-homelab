@@ -7,3 +7,4 @@ base_packages:
   - git
   - smartmontools
   - build-essential
+  - fastfetch

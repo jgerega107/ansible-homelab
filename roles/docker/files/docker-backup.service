@@ -2,6 +2,8 @@
 Description=Docker Volume Backup
 After=docker.service
 Requires=docker.service
+RequiresMountsFor=/mnt/tank
+ConditionPathIsMountPoint=/mnt/tank
 
 [Service]
 Type=oneshot

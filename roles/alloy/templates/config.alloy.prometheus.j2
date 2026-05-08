@@ -83,6 +83,7 @@ prometheus.scrape "docker_container_metrics_host" {
 prometheus.scrape "base_exporters" {
 	targets = array.concat([
 		{"__address__" = string.format("%s:%s", constants.hostname, "9100"), "job" = "node_exporter"},
+		{"__address__" = "100.100.100.100", "job" = "tailscale"},
 	], prometheus.exporter.self.alloy_exporter.targets)
 	forward_to = [prometheus.remote_write.prom_remote.receiver]
 }
