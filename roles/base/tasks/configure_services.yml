@@ -6,11 +6,6 @@
     name: fstrim.timer
     enabled: true
 
-- name: Enable systemd-timesyncd
-  ansible.builtin.service:
-    name: systemd-timesyncd
-    enabled: true
-
 - name: Set timezone
   community.general.timezone:
     name: America/New_York
