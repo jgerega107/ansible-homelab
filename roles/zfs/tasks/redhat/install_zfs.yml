@@ -1,0 +1,16 @@
+---
+- name: Install EPEL repository
+  ansible.builtin.dnf:
+    name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
+    state: present
+
+- name: Install OpenZFS repository
+  ansible.builtin.dnf:
+    name: "https://zfsonlinux.org/epel/zfs-release-2-3.el{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
+    state: present
+
+- name: Install ZFS
+  ansible.builtin.dnf:
+    name: zfs
+    state: present
+  notify: Reboot system

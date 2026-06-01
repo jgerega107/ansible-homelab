@@ -1,0 +1,14 @@
+- name: Install EPEL repository
+  ansible.builtin.dnf:
+    name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
+    state: present
+
+- name: Install RedHat base packages
+  ansible.builtin.dnf:
+    name: "{{ base_packages + base_os_packages }}"
+    state: present
+
+- name: Remove firewalld
+  ansible.builtin.dnf:
+    name: firewalld
+    state: absent

@@ -1,0 +1,9 @@
+- name: Install Debian base packages
+  ansible.builtin.apt:
+    name: "{{ base_packages + base_os_packages }}"
+    state: present
+
+- name: Remove snapd
+  ansible.builtin.apt:
+    name: snapd
+    state: absent

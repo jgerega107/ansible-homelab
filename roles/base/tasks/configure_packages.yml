@@ -1,14 +1,3 @@
-- name: Install base packages
-  ansible.builtin.package:
-      name: "{{ base_packages }}"
-      state: present
-
-- name: Remove firewalld
-  ansible.builtin.package:
-      name: firewalld
-      state: absent
-
-- name: Remove snapd
-  ansible.builtin.package:
-      name: snapd
-      state: absent
+- name: Configure OS family packages
+  ansible.builtin.include_tasks:
+    file: "{{ ansible_facts['os_family'] | lower }}/configure_packages.yml"

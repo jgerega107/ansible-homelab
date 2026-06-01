@@ -4,3 +4,5 @@ __nvidia_arch_map:
   aarch64: 'arm64'
 
 __nvidia_arch: "{{ __nvidia_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+
+__nvidia_cuda_arch: "{{ 'sbsa' if ansible_facts['architecture'] == 'aarch64' else 'x86_64' }}"

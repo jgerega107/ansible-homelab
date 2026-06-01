@@ -1,3 +1,13 @@
+- name: Validate supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
+    fail_msg: "The base role supports Debian and RedHat OS families only."
+
+- name: Load OS family variables
+  ansible.builtin.include_vars:
+    file: "{{ ansible_facts['os_family'] | lower }}.yml"
+
 - name: Configure packages
   ansible.builtin.import_tasks:
     file: configure_packages.yml

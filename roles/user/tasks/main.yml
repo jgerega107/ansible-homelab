@@ -1,4 +1,14 @@
 ---
+- name: Validate supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
+    fail_msg: "The user role supports Debian and RedHat OS families only."
+
+- name: Load OS family variables
+  ansible.builtin.include_vars:
+    file: "{{ ansible_facts['os_family'] | lower }}.yml"
+
 - name: Create/Update users
   ansible.builtin.user:
     name: "{{ item.name }}"

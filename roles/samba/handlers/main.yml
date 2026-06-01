@@ -6,5 +6,5 @@
 
 - name: Restart Samba
   ansible.builtin.service:
-    service: smb
+    name: "{{ samba_service_name }}"
     state: restarted

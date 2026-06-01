@@ -1,3 +1,9 @@
+- name: Validate supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
+    fail_msg: "The samba role supports Debian and RedHat OS families only."
+
 - name: Install Samba packages
   ansible.builtin.package:
     name: samba

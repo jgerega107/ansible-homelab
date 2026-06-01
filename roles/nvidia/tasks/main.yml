@@ -1,46 +1,23 @@
 ---
-- name: Install Linux headers
-  ansible.builtin.apt:
-    name: linux-headers-amd64
-    state: present
-    update_cache: true
+- name: Validate supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
+    fail_msg: "The nvidia role supports Debian and RedHat OS families only."
 
-- name: Install CUDA keyring package
-  ansible.builtin.apt:
-    deb: https://developer.download.nvidia.com/compute/cuda/repos/debian13/x86_64/cuda-keyring_1.1-1_all.deb
-    state: present
+- name: Load OS family variables
+  ansible.builtin.include_vars:
+    file: "{{ ansible_facts['os_family'] | lower }}.yml"
 
-- name: Install NVIDIA driver with open kernel modules
-  ansible.builtin.apt:
-    name:
-      - nvidia-driver-cuda
-      - nvidia-kernel-open-dkms
-    update_cache: true
-    state: present
-  notify: Reboot system
+- name: Install NVIDIA packages for OS family
+  ansible.builtin.include_tasks:
+    file: "{{ ansible_facts['os_family'] | lower }}/install_nvidia.yml"
 
-- name: Configure NVIDIA Docker Container Toolkit
-  block:
-    - name: Add NVIDIA CTK repo
-      ansible.builtin.deb822_repository:
-        name: nvidia-ctk
-        types: deb
-        uris: https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH)
-        suites: '/'
-        signed_by: https://nvidia.github.io/libnvidia-container/gpgkey
-
-    - name: Install NVIDIA Docker Container Toolkit base
-      ansible.builtin.apt:
-        package: nvidia-container-toolkit
-        state: present
-        update_cache: true
-      notify: Reboot system
-
-    - name: Copy over Docker daemon config
-      ansible.builtin.copy:
-        src: files/daemon.json
-        dest: /etc/docker/daemon.json
-        group: root
-        owner: root
-        mode: "0644"
-      notify: Restart docker
+- name: Copy over Docker daemon config
+  ansible.builtin.copy:
+    src: files/daemon.json
+    dest: /etc/docker/daemon.json
+    group: root
+    owner: root
+    mode: "0644"
+  notify: Restart docker

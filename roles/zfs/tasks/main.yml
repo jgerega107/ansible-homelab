@@ -1,10 +1,13 @@
 ---
-- name: Install ZFS from backports
-  ansible.builtin.apt:
-    name: zfsutils-linux
-    state: present
-    default_release: "{{ ansible_facts['distribution_release'] }}-backports"
-  notify: Reboot system
+- name: Validate supported OS family
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
+    fail_msg: "The zfs role supports Debian and RedHat OS families only."
+
+- name: Install ZFS for OS family
+  ansible.builtin.include_tasks:
+    file: "{{ ansible_facts['os_family'] | lower }}/install_zfs.yml"
 
 - name: Copy over ZFS key load service
   ansible.builtin.copy:
