@@ -34,6 +34,5 @@
     regex: "^(#)?{{ item.1 }}"
     line: "{{ item.1 }}"
     state: present
-  with_nested:
-    - "{{ user_users }}"
-    - "{{ user_additional_bash_config | default([]) }}"
+  loop: >-
+    {{ user_users | subelements('additional_bash_config', skip_missing=True) }}
