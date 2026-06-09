@@ -1,19 +1,19 @@
 ---
 - name: Validate supported OS family
   ansible.builtin.assert:
-    that:
-      - ansible_facts['os_family'] in ['Debian', 'RedHat']
-    fail_msg: "The docker role supports Debian and RedHat OS families only."
+      that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+      fail_msg: "The docker role supports Debian and RedHat OS families only."
 
 - name: Install Docker
   ansible.builtin.include_tasks:
-    file: install_docker.yml
+      file: install_docker.yml
 
 - name: Configure Docker data dir
   ansible.builtin.include_tasks:
-    file: configure_data_dir.yml
+      file: configure_data_dir.yml
 
 - name: Configure Docker backups
   ansible.builtin.include_tasks:
-    file: configure_backups.yml
+      file: configure_backups.yml
   when: docker_configure_backups

@@ -3,9 +3,9 @@
 
 - name: Enable fstrim timer
   ansible.builtin.service:
-    name: fstrim.timer
-    enabled: true
+      name: fstrim.timer
+      enabled: true
 
 - name: Set timezone
   community.general.timezone:
-    name: America/New_York
+      name: America/New_York

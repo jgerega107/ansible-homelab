@@ -1,73 +1,73 @@
 ---
 - name: Start sshd
   ansible.builtin.service:
-    name: "{{ base_ssh_service_name }}"
-    state: started
-    enabled: true
+      name: "{{ base_ssh_service_name }}"
+      state: started
+      enabled: true
 
 - name: Ensure sshd_config.d exists
   ansible.builtin.file:
-    path: /etc/ssh/sshd_config.d
-    state: directory
-    mode: "0755"
+      path: /etc/ssh/sshd_config.d
+      state: directory
+      mode: "0755"
 
 - name: Find existing sshd_config.d files
   ansible.builtin.find:
-    paths: /etc/ssh/sshd_config.d
-    file_type: file
+      paths: /etc/ssh/sshd_config.d
+      file_type: file
   register: base_sshd_config_files
 
 - name: Remove unmanaged sshd_config.d files
   ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: absent
+      path: "{{ item.path }}"
+      state: absent
   loop: "{{ base_sshd_config_files.files }}"
   when: item.path | basename != 'hardening.conf'
   notify:
-    - Restart sshd
+      - Restart sshd
 
 - name: Configure sshd hardening
   ansible.builtin.copy:
-    dest: /etc/ssh/sshd_config.d/hardening.conf
-    content: |
-      PermitRootLogin forced-commands-only
-      PasswordAuthentication no
-      PubkeyAuthentication yes
-    mode: "0644"
+      dest: /etc/ssh/sshd_config.d/hardening.conf
+      content: |
+          PermitRootLogin forced-commands-only
+          PasswordAuthentication no
+          PubkeyAuthentication yes
+      mode: "0644"
   notify:
-    - Restart sshd
+      - Restart sshd
 
 - name: Flush handlers to restart sshd if needed
   ansible.builtin.meta: flush_handlers
 
 - name: Verify sshd configuration is valid
   ansible.builtin.command:
-    cmd: sshd -t
+      cmd: sshd -t
   changed_when: false
 
 - name: Get effective sshd configuration
   ansible.builtin.command:
-    cmd: sshd -T
+      cmd: sshd -T
   register: base_sshd_config
   changed_when: false
 
 - name: Verify PermitRootLogin is forced-commands-only
   ansible.builtin.assert:
-    that:
-      - "'permitrootlogin forced-commands-only' in base_sshd_config.stdout | lower"
-    fail_msg: "PermitRootLogin is not forced-commands-only"
-    success_msg: "PermitRootLogin is forced-commands-only"
+      that:
+          - "'permitrootlogin forced-commands-only' in base_sshd_config.stdout | lower"
+      fail_msg: "PermitRootLogin is not forced-commands-only"
+      success_msg: "PermitRootLogin is forced-commands-only"
 
 - name: Verify PasswordAuthentication is disabled
   ansible.builtin.assert:
-    that:
-      - "'passwordauthentication no' in base_sshd_config.stdout | lower"
-    fail_msg: "PasswordAuthentication is not disabled"
-    success_msg: "PasswordAuthentication is disabled"
+      that:
+          - "'passwordauthentication no' in base_sshd_config.stdout | lower"
+      fail_msg: "PasswordAuthentication is not disabled"
+      success_msg: "PasswordAuthentication is disabled"
 
 - name: Verify PubkeyAuthentication is enabled
   ansible.builtin.assert:
-    that:
-      - "'pubkeyauthentication yes' in base_sshd_config.stdout | lower"
-    fail_msg: "PubkeyAuthentication is not enabled"
-    success_msg: "PubkeyAuthentication is enabled"
+      that:
+          - "'pubkeyauthentication yes' in base_sshd_config.stdout | lower"
+      fail_msg: "PubkeyAuthentication is not enabled"
+      success_msg: "PubkeyAuthentication is enabled"

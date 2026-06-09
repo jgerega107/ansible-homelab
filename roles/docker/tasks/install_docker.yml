@@ -1,10 +1,10 @@
 ---
 - name: Install Docker for OS family
   ansible.builtin.include_tasks:
-    file: "{{ ansible_facts['os_family'] | lower }}/install_docker.yml"
+      file: "{{ ansible_facts['os_family'] | lower }}/install_docker.yml"
 
 - name: Start Docker
   ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: true
+      name: docker
+      state: started
+      enabled: true

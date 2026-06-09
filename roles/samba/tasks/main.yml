@@ -1,31 +1,31 @@
 - name: Validate supported OS family
   ansible.builtin.assert:
-    that:
-      - ansible_facts['os_family'] in ['Debian', 'RedHat']
-    fail_msg: "The samba role supports Debian and RedHat OS families only."
+      that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+      fail_msg: "The samba role supports Debian and RedHat OS families only."
 
 - name: Install Samba packages
   ansible.builtin.package:
-    name: samba
-    state: present
+      name: samba
+      state: present
 
 - name: Template Samba config
   ansible.builtin.template:
-    src: templates/smb.conf.j2
-    dest: /etc/samba/smb.conf
-    mode: "0644"
-    owner: root
-    group: root
+      src: templates/smb.conf.j2
+      dest: /etc/samba/smb.conf
+      mode: "0644"
+      owner: root
+      group: root
   notify: Restart Samba
 
 - name: Start SMB service
   ansible.builtin.service:
-    name: smb
-    state: started
-    enabled: true
+      name: smb
+      state: started
+      enabled: true
 
 - name: Start NMB service
   ansible.builtin.service:
-    name: nmb
-    state: started
-    enabled: true
+      name: nmb
+      state: started
+      enabled: true

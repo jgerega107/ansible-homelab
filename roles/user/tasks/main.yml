@@ -1,38 +1,38 @@
 ---
 - name: Validate supported OS family
   ansible.builtin.assert:
-    that:
-      - ansible_facts['os_family'] in ['Debian', 'RedHat']
-    fail_msg: "The user role supports Debian and RedHat OS families only."
+      that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+      fail_msg: "The user role supports Debian and RedHat OS families only."
 
 - name: Load OS family variables
   ansible.builtin.include_vars:
-    file: "{{ ansible_facts['os_family'] | lower }}.yml"
+      file: "{{ ansible_facts['os_family'] | lower }}.yml"
 
 - name: Create/Update users
   ansible.builtin.user:
-    name: "{{ item.name }}"
-    comment: "{{ item.description }}"
-    shell: "{{ item.shell }}"
-    groups: "{{ user_groups + (item.additional_groups | default([])) }}"
-    append: true
-    state: present
-    create_home: true
+      name: "{{ item.name }}"
+      comment: "{{ item.description }}"
+      shell: "{{ item.shell }}"
+      groups: "{{ user_groups + (item.additional_groups | default([])) }}"
+      append: true
+      state: present
+      create_home: true
   loop: "{{ user_users }}"
 
 - name: Set authorized keys for users
   ansible.posix.authorized_key:
-    user: "{{ item.name }}"
-    state: present
-    key: "{{ item.ssh_pub_key }}"
-    # exclusive: true
+      user: "{{ item.name }}"
+      state: present
+      key: "{{ item.ssh_pub_key }}"
+      # exclusive: true
   loop: "{{ user_users }}"
 
 - name: Configure bashrc
   ansible.builtin.lineinfile:
-    path: "/home/{{ item.0.name }}/.bashrc"
-    regex: "^(#)?{{ item.1 }}"
-    line: "{{ item.1 }}"
-    state: present
+      path: "/home/{{ item.0.name }}/.bashrc"
+      regex: "^(#)?{{ item.1 }}"
+      line: "{{ item.1 }}"
+      state: present
   loop: >-
-    {{ user_users | subelements('additional_bash_config', skip_missing=True) }}
+      {{ user_users | subelements('additional_bash_config', skip_missing=True) }}

@@ -1,13 +1,13 @@
 ---
 __nvidia_deb_driver_packages:
-  Debian:
-    - nvidia-driver-cuda
-    - nvidia-kernel-open-dkms
-  Ubuntu:
-    - libnvidia-compute
-    - nvidia-dkms-open
+    Debian:
+        - nvidia-driver-cuda
+        - nvidia-kernel-open-dkms
+    Ubuntu:
+        - libnvidia-compute
+        - nvidia-dkms-open
 
 __nvidia_deb_distribution: >-
-  {{ 'debian' ~ ansible_facts['distribution_major_version']
-     if ansible_facts['distribution'] == 'Debian'
-     else 'ubuntu' ~ (ansible_facts['distribution_version'].split('.')[0:2] | join) }}
+    {{ 'debian' ~ ansible_facts['distribution_major_version']
+       if ansible_facts['distribution'] == 'Debian'
+       else 'ubuntu' ~ (ansible_facts['distribution_version'].split('.')[0:2] | join) }}

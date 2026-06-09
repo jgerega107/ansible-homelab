@@ -1,6 +1,6 @@
 ---
 base_os_packages:
-  - build-essential
-  - systemd-timesyncd
+    - build-essential
+    - systemd-timesyncd
 
 base_ssh_service_name: ssh

@@ -1,23 +1,23 @@
 ---
 - name: Validate supported OS family
   ansible.builtin.assert:
-    that:
-      - ansible_facts['os_family'] in ['Debian', 'RedHat']
-    fail_msg: "The nvidia role supports Debian and RedHat OS families only."
+      that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+      fail_msg: "The nvidia role supports Debian and RedHat OS families only."
 
 - name: Load OS family variables
   ansible.builtin.include_vars:
-    file: "{{ ansible_facts['os_family'] | lower }}.yml"
+      file: "{{ ansible_facts['os_family'] | lower }}.yml"
 
 - name: Install NVIDIA packages for OS family
   ansible.builtin.include_tasks:
-    file: "{{ ansible_facts['os_family'] | lower }}/install_nvidia.yml"
+      file: "{{ ansible_facts['os_family'] | lower }}/install_nvidia.yml"
 
 - name: Copy over Docker daemon config
   ansible.builtin.copy:
-    src: files/daemon.json
-    dest: /etc/docker/daemon.json
-    group: root
-    owner: root
-    mode: "0644"
+      src: files/daemon.json
+      dest: /etc/docker/daemon.json
+      group: root
+      owner: root
+      mode: "0644"
   notify: Restart docker

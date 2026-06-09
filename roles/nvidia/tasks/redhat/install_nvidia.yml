@@ -1,45 +1,45 @@
 ---
 - name: Install EPEL repository
   ansible.builtin.dnf:
-    name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
-    state: present
+      name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
+      state: present
 
 - name: Install NVIDIA driver prerequisites
   ansible.builtin.dnf:
-    name:
-      - dnf-plugins-core
-      - kernel-devel
-      - kernel-headers
-    state: present
+      name:
+          - dnf-plugins-core
+          - kernel-devel
+          - kernel-headers
+      state: present
 
 - name: Add NVIDIA CUDA repo
   ansible.builtin.get_url:
-    url: "https://developer.download.nvidia.com/compute/cuda/repos/rhel{{ ansible_facts['distribution_major_version'] }}/{{ __nvidia_cuda_arch }}/cuda-rhel{{ ansible_facts['distribution_major_version'] }}.repo" # noqa yaml[line-length]
-    dest: "/etc/yum.repos.d/cuda-rhel{{ ansible_facts['distribution_major_version'] }}.repo"
-    mode: "0644"
+      url: "https://developer.download.nvidia.com/compute/cuda/repos/rhel{{ ansible_facts['distribution_major_version'] }}/{{ __nvidia_cuda_arch }}/cuda-rhel{{ ansible_facts['distribution_major_version'] }}.repo" # noqa yaml[line-length]
+      dest: "/etc/yum.repos.d/cuda-rhel{{ ansible_facts['distribution_major_version'] }}.repo"
+      mode: "0644"
 
 - name: Enable NVIDIA open DKMS module stream
   ansible.builtin.command:
-    cmd: dnf -y module enable nvidia-driver:open-dkms
+      cmd: dnf -y module enable nvidia-driver:open-dkms
   changed_when: false
   when: ansible_facts['distribution_major_version'] in ['8', '9']
 
 - name: Install NVIDIA driver with open kernel modules
   ansible.builtin.dnf:
-    name:
-      - nvidia-driver-cuda
-      - kmod-nvidia-open-dkms
-    state: present
+      name:
+          - nvidia-driver-cuda
+          - kmod-nvidia-open-dkms
+      state: present
   notify: Reboot system
 
 - name: Add NVIDIA Container Toolkit repo
   ansible.builtin.get_url:
-    url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
-    dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
-    mode: "0644"
+      url: https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo
+      dest: /etc/yum.repos.d/nvidia-container-toolkit.repo
+      mode: "0644"
 
 - name: Install NVIDIA Container Toolkit
   ansible.builtin.dnf:
-    name: nvidia-container-toolkit
-    state: present
+      name: nvidia-container-toolkit
+      state: present
   notify: Reboot system

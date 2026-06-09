@@ -1,23 +1,23 @@
 ---
 - name: Validate supported OS family
   ansible.builtin.assert:
-    that:
-      - ansible_facts['os_family'] in ['Debian', 'RedHat']
-    fail_msg: "The zfs role supports Debian and RedHat OS families only."
+      that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+      fail_msg: "The zfs role supports Debian and RedHat OS families only."
 
 - name: Install ZFS for OS family
   ansible.builtin.include_tasks:
-    file: "{{ ansible_facts['os_family'] | lower }}/install_zfs.yml"
+      file: "{{ ansible_facts['os_family'] | lower }}/install_zfs.yml"
 
 - name: Copy over ZFS key load service
   ansible.builtin.copy:
-    src: files/zfs-load-key.service
-    dest: /etc/systemd/system/zfs-load-key.service
-    group: root
-    owner: root
-    mode: "0644"
+      src: files/zfs-load-key.service
+      dest: /etc/systemd/system/zfs-load-key.service
+      group: root
+      owner: root
+      mode: "0644"
 
 - name: Enable ZFS key load service
   ansible.builtin.service:
-    name: zfs-load-key
-    enabled: true
+      name: zfs-load-key
+      enabled: true

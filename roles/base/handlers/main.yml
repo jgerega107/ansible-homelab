@@ -1,8 +1,8 @@
 - name: Restart sshd
   ansible.builtin.service:
-    name: "{{ base_ssh_service_name }}"
-    state: restarted
+      name: "{{ base_ssh_service_name }}"
+      state: restarted
 
 - name: Reboot system
   ansible.builtin.reboot:
-    reboot_timeout: 300 # wait for 5 mins
+      reboot_timeout: 300 # wait for 5 mins

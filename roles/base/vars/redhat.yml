@@ -1,6 +1,6 @@
 ---
 base_os_packages:
-  - "@Development Tools"
-  - chrony
+    - "@Development Tools"
+    - chrony
 
 base_ssh_service_name: sshd

@@ -2,4 +2,4 @@
   hosts: master
   become: true
   roles:
-    - samba
+      - samba

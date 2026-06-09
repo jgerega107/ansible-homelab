@@ -1,39 +1,39 @@
 ---
 - name: Validate supported Debian distribution
   ansible.builtin.assert:
-    that:
-      - ansible_facts['distribution'] in ['Debian', 'Ubuntu']
-    fail_msg: "The nvidia role supports Debian and Ubuntu distributions in the Debian OS family."
+      that:
+          - ansible_facts['distribution'] in ['Debian', 'Ubuntu']
+      fail_msg: "The nvidia role supports Debian and Ubuntu distributions in the Debian OS family."
 
 - name: Install Linux headers
   ansible.builtin.apt:
-    name: "linux-headers-{{ ansible_facts['kernel'] }}"
-    state: present
-    update_cache: true
+      name: "linux-headers-{{ ansible_facts['kernel'] }}"
+      state: present
+      update_cache: true
 
 - name: Install CUDA keyring package
   ansible.builtin.apt:
-    deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ __nvidia_deb_distribution }}/{{ __nvidia_cuda_arch }}/cuda-keyring_1.1-1_all.deb" # noqa yaml[line-length]
-    state: present
+      deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ __nvidia_deb_distribution }}/{{ __nvidia_cuda_arch }}/cuda-keyring_1.1-1_all.deb" # noqa yaml[line-length]
+      state: present
 
 - name: Install NVIDIA driver with open kernel modules
   ansible.builtin.apt:
-    name: "{{ __nvidia_deb_driver_packages[ansible_facts['distribution']] }}"
-    update_cache: true
-    state: present
+      name: "{{ __nvidia_deb_driver_packages[ansible_facts['distribution']] }}"
+      update_cache: true
+      state: present
   notify: Reboot system
 
 - name: Add NVIDIA Container Toolkit repo
   ansible.builtin.deb822_repository:
-    name: nvidia-ctk
-    types: deb
-    uris: https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH)
-    suites: "/"
-    signed_by: https://nvidia.github.io/libnvidia-container/gpgkey
+      name: nvidia-ctk
+      types: deb
+      uris: https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH)
+      suites: "/"
+      signed_by: https://nvidia.github.io/libnvidia-container/gpgkey
 
 - name: Install NVIDIA Container Toolkit
   ansible.builtin.apt:
-    package: nvidia-container-toolkit
-    state: present
-    update_cache: true
+      package: nvidia-container-toolkit
+      state: present
+      update_cache: true
   notify: Reboot system
