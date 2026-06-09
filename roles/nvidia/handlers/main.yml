@@ -1,6 +1,6 @@
 - name: Reboot system
   ansible.builtin.reboot:
-    reboot_timeout: 300  # wait for 5 mins
+    reboot_timeout: 300 # wait for 5 mins
 
 - name: Restart docker
   ansible.builtin.service:

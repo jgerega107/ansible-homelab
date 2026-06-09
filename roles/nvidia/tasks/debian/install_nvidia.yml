@@ -13,7 +13,7 @@
 
 - name: Install CUDA keyring package
   ansible.builtin.apt:
-    deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ __nvidia_deb_distribution }}/{{ __nvidia_cuda_arch }}/cuda-keyring_1.1-1_all.deb"  # noqa yaml[line-length]
+    deb: "https://developer.download.nvidia.com/compute/cuda/repos/{{ __nvidia_deb_distribution }}/{{ __nvidia_cuda_arch }}/cuda-keyring_1.1-1_all.deb" # noqa yaml[line-length]
     state: present
 
 - name: Install NVIDIA driver with open kernel modules
@@ -28,7 +28,7 @@
     name: nvidia-ctk
     types: deb
     uris: https://nvidia.github.io/libnvidia-container/stable/deb/$(ARCH)
-    suites: '/'
+    suites: "/"
     signed_by: https://nvidia.github.io/libnvidia-container/gpgkey
 
 - name: Install NVIDIA Container Toolkit

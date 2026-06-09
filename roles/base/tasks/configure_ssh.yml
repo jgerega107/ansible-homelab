@@ -30,7 +30,7 @@
   ansible.builtin.copy:
     dest: /etc/ssh/sshd_config.d/hardening.conf
     content: |
-      PermitRootLogin no
+      PermitRootLogin forced-commands-only
       PasswordAuthentication no
       PubkeyAuthentication yes
     mode: "0644"
@@ -51,12 +51,12 @@
   register: base_sshd_config
   changed_when: false
 
-- name: Verify PermitRootLogin is disabled
+- name: Verify PermitRootLogin is forced-commands-only
   ansible.builtin.assert:
     that:
-      - "'permitrootlogin no' in base_sshd_config.stdout | lower"
-    fail_msg: "PermitRootLogin is not disabled"
-    success_msg: "PermitRootLogin is disabled"
+      - "'permitrootlogin forced-commands-only' in base_sshd_config.stdout | lower"
+    fail_msg: "PermitRootLogin is not forced-commands-only"
+    success_msg: "PermitRootLogin is forced-commands-only"
 
 - name: Verify PasswordAuthentication is disabled
   ansible.builtin.assert:

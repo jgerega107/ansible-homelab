@@ -3,7 +3,7 @@
   ansible.builtin.file:
     path: "{{ docker_base_dir }}"
     state: directory
-    mode: '0775'
+    mode: "0775"
     owner: root
     group: docker
 
@@ -11,7 +11,7 @@
   ansible.builtin.file:
     path: "{{ docker_data_dir }}"
     state: directory
-    mode: '0775'
+    mode: "0775"
     owner: root
     group: docker
 
@@ -19,7 +19,7 @@
   ansible.builtin.file:
     path: "{{ docker_compose_dir }}"
     state: directory
-    mode: '0775'
+    mode: "0775"
     owner: root
     group: docker
     recurse: true
